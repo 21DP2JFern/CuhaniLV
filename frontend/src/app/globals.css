@@ -1,21 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
-@media (prefers-color-scheme: dark) {
+
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --font-space-grotesk: 'Funnel Display';
   }
-}
+  
+  body {
+    font-family: var(--font-funnel-display);
+    background-color: #232e42;
+    overflow-x: hidden;
+  }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+  option {
+    background-color: #232e42; /* Light grey background */
+    font-family: "Funnel Display", sans-serif; /* Same font as select */
+  }

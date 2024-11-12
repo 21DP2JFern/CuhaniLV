@@ -8,10 +8,13 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+      colors:{
+        "main-white" : "#fdfdec",
+        "main-gray" : "#232e42",
+        "main-red" : "#e6000c",
       },
+      fontFamily: {
+      }
     },
   },
   plugins: [],
