@@ -14,7 +14,8 @@ export default {
         "main-red" : "#e6000c",
       },
       fontFamily: {
-      }
+        sans: ['var(--font-funnel-display)', 'sans-serif'],
+      },
     },
   },
   plugins: [],
