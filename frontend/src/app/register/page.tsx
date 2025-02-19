@@ -1,12 +1,14 @@
 'use client'; //kautkas
 
 import React, { useState } from 'react';
-import api from '../axios'; // Import your Axios instance
+import axios from 'axios';
+import api from 'axios'; // Import your Axios instance
 import { useRouter } from 'next/navigation';
 
 export default function Register() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,30 +32,18 @@ export default function Register() {
     try {
       const response = await api.post('http://127.0.0.1:8000/api/register', {
         email,
+        username,
         password,
         password_confirmation: confirmPassword, // Pass password confirmation
       });
 
       console.log('Registration successful:', response.data);
-      localStorage.setItem('userToken', response.data.token);
       
-      // Redirect to 'About You' page
-      router.push('/about-you');
+      router.push('/');
 
     } catch (error) {
       console.error('Registration failed:', error);
-
-      // Display a more detailed error if provided
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Registration failed, please try again.');
-      }
     }
-  };
-
-  const handleLoginRedirect = () => {
-    router.push('/login');
   };
 
 
@@ -83,11 +73,37 @@ export default function Register() {
         </div>
       </div>
       <div className="flex flex-col bg-main-white h-[100%] w-[40%]">
-        <div className="flex flex-col mt-[37%] mx-auto h-[50%] w-[30%]">
-          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="email" placeholder="E-mail"></input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="text" placeholder="Username"></input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="password" placeholder="Password"></input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="password" placeholder="Repeat password"></input>
+        <form className="flex flex-col mt-[37%] mx-auto h-[50%] w-[30%]" onSubmit={handleRegister} method="post">
+          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+          type="email" 
+          id="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}>
+          </input>
+          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
+           type="text" 
+           id="username"
+           placeholder="Username"
+           value={username}
+           onChange={(e) => setUsername(e.target.value)}>
+           </input>
+          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
+           type="password"
+           id="password" 
+           placeholder="Password"
+           value={password}
+           onChange={(e) => setPassword(e.target.value)}
+          >
+           </input>
+          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+          type="password"
+          id="repeat-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="Repeat password">
+
+          </input>
           <button className="bg-main-red text-main-white h-14 rounded-md mb-1 font-bold text-xl mt-4">Register</button>
           <div className="flex flex-row">
             <div className="h-0.5 w-[40%] my-7 ml-1 mr-2 bg-main-gray"></div>
@@ -96,7 +112,7 @@ export default function Register() {
           </div>
           <button className="bg-main-gray text-main-white h-14 mt-1 rounded-md font-bold text-xl"
           onClick={()=>{router.push("/")}}>Log in</button>
-        </div>
+        </form>
       </div>
     </div>
   );

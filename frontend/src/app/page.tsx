@@ -1,8 +1,35 @@
-'use client'
-import { useRouter } from "next/navigation";
+'use client'; // Enable client-side functionality
+
+import React, { useState } from 'react';
+import Link from "next/link";
+import api from 'axios'; 
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+        const response = await api.post('http://127.0.0.1:8000/api/login', {
+            email,
+            password,
+        });
+        if (response.data.status) { 
+            console.log('Login successful:', response.data);
+            localStorage.setItem('userToken', response.data.token);
+            setTimeout(() => {
+                router.push('/home'); 
+            }, 500);
+        
+          }
+    } catch (error: any) {
+        console.error('Login failed:', error);
+    }
+};
   return (
     <div className="flex flex-row w-full h-full">
       <div className="flex flex-col bg-main-gray w-[70%] h-[100%]">
@@ -29,9 +56,21 @@ export default function Home() {
         </div>
       </div>
       <div className="flex flex-col bg-main-white h-[100%] w-[40%]">
-        <div className="flex flex-col mt-[45%] mx-auto h-[40%] w-[30%]">
-          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="email" placeholder="E-mail"></input>
-          <input className="h-14 mt-4 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" type="password" placeholder="Password"></input>
+        <form className="flex flex-col mt-[45%] mx-auto h-[40%] w-[30%]" onSubmit={handleLogin}>
+          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+          type="email" 
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="E-mail"
+          ></input>
+          <input className="h-14 mt-4 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+          type="password" 
+          placeholder="Password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          ></input>
           <button className="bg-main-gray text-main-white h-14 rounded-md mt-6 font-bold text-xl">Log in</button>
           <div className="flex flex-row">
             <div className="h-0.5 w-[40%] my-4 ml-1 mr-2 bg-main-gray"></div>
@@ -42,7 +81,7 @@ export default function Home() {
           
             <button className="bg-main-red text-main-white h-14 rounded-md font-bold text-xl"
             onClick={() =>{router.push("/register")}}>Register</button>
-        </div>
+        </form>
       </div>
     </div>
   );
