@@ -68,23 +68,35 @@ class AuthController extends Controller
         }
     }
 
-    public function logout(){
-        auth()->user()->token()->revoke();
-        return response()->json([
-            "status" => true,
-            "message" => "User Logged out"
-        ]);
+    public function logout(Request $request){
+        if (Auth::check()) {
+            Auth::user()->token()->revoke();
+            return response()->json(['message' => 'Logged out successfully']);
+        } else {
+            return response()->json(['error' => 'Not authenticated']);
+        }
     }
 
-    public function profile(){
+    public function profile(Request $request) {
         $user = Auth::user();
-
+    
+        if (!$user) {
+            return response()->json([
+                "status" => false,
+                "message" => "Unauthorized",
+            ], 401);
+        }
+    
         return response()->json([
             "status" => true,
             "message" => "Profile information",
-            "data" => $user, // User data,
-            
+            "user" => [
+                "username" => $user->username,
+                "email" => $user->email,
+                "bio" => $user->bio,  
+                "profile_picture" => $user->profile_picture,  
+                "banner" => $user->banner,  
+            ],
         ]);
     }
-
 }

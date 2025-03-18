@@ -14,22 +14,33 @@ export default function Home() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        const response = await api.post('http://127.0.0.1:8000/api/login', {
-            email,
-            password,
-        });
-        if (response.data.status) { 
-            console.log('Login successful:', response.data);
-            localStorage.setItem('userToken', response.data.token);
-            setTimeout(() => {
-                router.push('/home'); 
-            }, 500);
-        
-          }
+      const response = await api.post('http://127.0.0.1:8000/api/login', {
+          email,
+          password,
+      },
+      {
+        withCredentials: true,
+        headers: { 
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.data.status) { 
+          console.log('Login successful:', response.data);
+          localStorage.setItem('userToken', response.data.token);
+          
+          // Configure axios for future requests with the token
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+          
+          setTimeout(() => {
+              router.push('/home'); 
+          }, 500);
+      }
     } catch (error: any) {
         console.error('Login failed:', error);
     }
-};
+  };
   return (
     <div className="flex flex-row w-full h-full">
       <div className="flex flex-col bg-main-gray w-[70%] h-[100%]">
@@ -71,7 +82,7 @@ export default function Home() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           ></input>
-          <button className="bg-main-gray text-main-white h-14 rounded-md mt-6 font-bold text-xl">Log in</button>
+          <button type="submit" className="bg-main-gray text-main-white h-14 rounded-md mt-6 font-bold text-xl">Log in</button>
           <div className="flex flex-row">
             <div className="h-0.5 w-[40%] my-4 ml-1 mr-2 bg-main-gray"></div>
             <p className="mt-1">Or</p>
