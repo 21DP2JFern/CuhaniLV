@@ -18,8 +18,8 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => ['http://localhost:3000'], // 🔥 Change this to your frontend URL
     'allowed_origins_patterns' => [],
-    'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With'],
-    'exposed_headers' => [],
+    'allowed_headers' => ['*'],  // Allow all headers
+    'exposed_headers' => ['*'],  // Expose all headers
     'max_age' => 0,
     'supports_credentials' => true, // 🔥 REQUIRED for authentication
 ];

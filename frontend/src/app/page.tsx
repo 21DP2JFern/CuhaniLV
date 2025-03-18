@@ -4,41 +4,30 @@ import React, { useState } from 'react';
 import Link from "next/link";
 import api from 'axios'; 
 import { useRouter } from 'next/navigation';
+import { login } from '@/services/auth';
 
 export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
     try {
-      const response = await api.post('http://127.0.0.1:8000/api/login', {
-          email,
-          password,
-      },
-      {
-        withCredentials: true,
-        headers: { 
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.data.status) { 
-          console.log('Login successful:', response.data);
-          localStorage.setItem('userToken', response.data.token);
-          
-          // Configure axios for future requests with the token
-          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-          
-          setTimeout(() => {
-              router.push('/home'); 
-          }, 500);
+      const response = await login(email, password);
+      if (response.status) {
+        console.log('Login successful');
+        setTimeout(() => {
+          router.push('/home');
+        }, 500);
       }
     } catch (error: any) {
-        console.error('Login failed:', error);
+      console.error('Login failed:', error);
+      setError(error.message || 'Login failed. Please try again.');
     }
   };
   return (

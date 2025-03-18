@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import axiosInstance from '@/services/auth';
+import Cookies from 'js-cookie';
 
 // Define the profile structure
 interface Profile {
@@ -14,47 +15,47 @@ interface Profile {
 export default function Profile() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true); // ✅ Add loading state
+    const [loading, setLoading] = useState<boolean>(true);
     const router = useRouter();
 
     // Fetch profile data
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem('userToken');
+                const token = Cookies.get('auth_token');
                 if (!token) {
                     setError("User is not authenticated.");
                     setLoading(false);
+                    router.push('/');
                     return;
                 }
 
-                const response = await axios.get<{ user: Profile }>('http://127.0.0.1:8000/api/profile', {
-                    headers: { Authorization: `Bearer ${token}`, 'Accept': 'application/json'},
-                    withCredentials: true,
-                });
-
+                const response = await axiosInstance.get<{ user: Profile }>('/profile');
                 setProfile(response.data.user);
-            } catch (err) {
+            } catch (err: any) {
                 setError("Error fetching profile. Please try again.");
+                if (err.response?.status === 401) {
+                    router.push('/');
+                }
             } finally {
-                setLoading(false); // ✅ Stop loading when request completes
+                setLoading(false);
             }
         };
 
         fetchProfile();
-    }, []);
+    }, [router]);
 
-    // ✅ Show a loading indicator while fetching
+    // Show a loading indicator while fetching
     if (loading) {
         return <div className="text-center text-white mt-10">Loading profile...</div>;
     }
 
-    // ✅ Show error message if authentication fails
+    // Show error message if authentication fails
     if (error) {
         return (
             <div className="text-center text-red-500 mt-10">
                 {error}
-                <button onClick={() => router.push('/login')} className="ml-4 text-blue-400 underline">
+                <button onClick={() => router.push('/')} className="ml-4 text-blue-400 underline">
                     Go to Login
                 </button>
             </div>
@@ -98,7 +99,15 @@ export default function Profile() {
 
                 <button 
                     className="px-6 py-2 bg-gray-700 hover:bg-gray-800 rounded-md text-white"
-                    onClick={() => { localStorage.removeItem('userToken'); router.push('/'); }}
+                    onClick={async () => { 
+                        try {
+                            await axiosInstance.post('/logout');
+                            Cookies.remove('auth_token');
+                            router.push('/');
+                        } catch (error) {
+                            console.error('Logout failed:', error);
+                        }
+                    }}
                 >
                     Logout
                 </button>
