@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import axiosInstance from '@/services/auth';
 import Cookies from 'js-cookie';
+import Header from '@/components/Header';
 
 // Define the profile structure
 interface Profile {
@@ -12,11 +13,14 @@ interface Profile {
     banner?: string;
 }
 
+const BACKEND_URL = 'http://localhost:8000';
+
 export default function Profile() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const router = useRouter();
+    const pathname = usePathname();
 
     // Fetch profile data
     useEffect(() => {
@@ -63,42 +67,43 @@ export default function Profile() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col items-center bg-gray-900 text-white">
+        <div className="w-full h-full flex flex-col items-center bg-main-gray text-white">
+            <Header />
             {/* Profile Banner */}
-            <div className="w-full h-56 bg-gray-700 flex justify-center items-center relative">
+            <div className="w-[60%] h-56 mt-10 rounded-md bg-gray-700 flex justify-center items-center relative">
                 {profile?.banner ? (
-                    <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" />
+                    <img src={`${BACKEND_URL}${profile.banner}`} alt="Banner" className="w-full h-full rounded-md object-cover" />
                 ) : (
                     <p className="text-gray-400">No banner uploaded</p>
                 )}
+                {/* Gap in banner */}
+                <div className="absolute -bottom-16 left-[15%] w-40 h-40 bg-main-gray rounded-full border-4 border-gray-800"></div>
             </div>
 
             {/* Profile Picture */}
-            <div className="w-40 h-40 rounded-full bg-gray-600 -mt-16 flex justify-center items-center border-4 border-gray-800">
+            <div className="w-40 h-40 rounded-full bg-gray-600 -mt-24 flex justify-center items-center border-4 border-gray-800 relative z-10 -ml-[34.5%]">
                 {profile?.profile_picture ? (
-                    <img src={profile.profile_picture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-full h-full rounded-full object-cover" />
                 ) : (
                     <p className="text-gray-300">No Image</p>
                 )}
             </div>
 
             {/* Username & Bio */}
-            <div className="mt-4 text-center">
+            <div className="-mt-12 w-[30%] h-[20%] ml-[5%]">
                 <h1 className="text-3xl font-semibold">{profile?.username ?? 'Unknown User'}</h1>
                 <p className="text-gray-400 mt-2">{profile?.bio ?? 'No bio available'}</p>
             </div>
 
             {/* Buttons */}
-            <div className="mt-6 flex space-x-4">
+            <div className="ml-[45%] -mt-[9.5%] flex space-x-4">
                 <button 
-                    className="px-6 py-2 bg-red-500 hover:bg-red-700 rounded-md text-white"
+                    className="px-6 py-2 bg-gray-700 transition-all duration-300 hover:bg-gray-800 rounded-md text-white"
                     onClick={() => router.push('/edit-profile')}
                 >
                     Edit Profile
                 </button>
-
-                <button 
-                    className="px-6 py-2 bg-gray-700 hover:bg-gray-800 rounded-md text-white"
+                <button className="px-6 py-2 bg-main-red transition-all duration-300 hover:bg-red-700 rounded-md text-white"
                     onClick={async () => { 
                         try {
                             await axiosInstance.post('/logout');
@@ -107,8 +112,7 @@ export default function Profile() {
                         } catch (error) {
                             console.error('Logout failed:', error);
                         }
-                    }}
-                >
+                    }}>
                     Logout
                 </button>
             </div>

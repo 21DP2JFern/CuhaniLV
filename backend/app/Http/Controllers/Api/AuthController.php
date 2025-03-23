@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Storage;
 
 
 class AuthController extends Controller
@@ -96,6 +97,74 @@ class AuthController extends Controller
                 "bio" => $user->bio,  
                 "profile_picture" => $user->profile_picture,  
                 "banner" => $user->banner,  
+            ],
+        ]);
+    }
+
+    public function updateProfile(Request $request) {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                "status" => false,
+                "message" => "Unauthorized",
+            ], 401);
+        }
+
+        // Validate the request
+        $request->validate([
+            'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+            'bio' => 'nullable|string|max:1000',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        // Update username if provided
+        if ($request->has('username')) {
+            $user->username = $request->username;
+        }
+
+        // Update bio if provided
+        if ($request->has('bio')) {
+            $user->bio = $request->bio;
+        }
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($user->profile_picture) {
+                $oldPath = str_replace('/storage/', '', $user->profile_picture);
+                Storage::delete('public/' . $oldPath);
+            }
+            
+            $profilePicture = $request->file('profile_picture');
+            $profilePicturePath = $profilePicture->store('profile_pictures', 'public');
+            $user->profile_picture = '/storage/' . $profilePicturePath;
+        }
+
+        // Handle banner upload
+        if ($request->hasFile('banner')) {
+            // Delete old banner if exists
+            if ($user->banner) {
+                $oldPath = str_replace('/storage/', '', $user->banner);
+                Storage::delete('public/' . $oldPath);
+            }
+            
+            $banner = $request->file('banner');
+            $bannerPath = $banner->store('banners', 'public');
+            $user->banner = '/storage/' . $bannerPath;
+        }
+
+        $user->save();
+
+        return response()->json([
+            "status" => true,
+            "message" => "Profile updated successfully",
+            "user" => [
+                "username" => $user->username,
+                "bio" => $user->bio,
+                "profile_picture" => $user->profile_picture,
+                "banner" => $user->banner,
             ],
         ]);
     }
