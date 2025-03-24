@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { forumService, Forum, Post } from '@/services/forumService';
 
-export default function GameForumPage({ params }: { params: { gameId: string } }) {
+export default function GameForumPage({ params }: { params: Promise<{ gameId: string }> }) {
+    const resolvedParams = use(params);
     const router = useRouter();
     const [forum, setForum] = useState<Forum | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
@@ -20,11 +21,11 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
 
     useEffect(() => {
         loadForumData();
-    }, [params.gameId]);
+    }, [resolvedParams.gameId]);
 
     const loadForumData = async () => {
         try {
-            const data = await forumService.getForum(params.gameId);
+            const data = await forumService.getForum(resolvedParams.gameId);
             setForum(data.forum);
             setPosts(data.posts);
         } catch (error) {
@@ -52,14 +53,32 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
         }
     };
 
+    const handlePostLike = async (postId: number) => {
+        try {
+            await forumService.likePost(postId);
+            loadForumData();
+        } catch (error) {
+            console.error('Error liking post:', error);
+        }
+    };
+
+    const handlePostDislike = async (postId: number) => {
+        try {
+            await forumService.dislikePost(postId);
+            loadForumData();
+        } catch (error) {
+            console.error('Error disliking post:', error);
+        }
+    };
+
     const sortedPosts = [...posts].sort((a, b) => {
         switch (sortBy) {
             case 'hot':
-                return b.upvotes - a.upvotes;
+                return b.likes - a.likes;
             case 'new':
                 return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
             case 'top':
-                return b.upvotes - a.upvotes;
+                return b.likes - a.likes;
             default:
                 return 0;
         }
@@ -67,7 +86,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-900 text-white">
+            <div className="min-h-screen bg-main-gray text-white">
                 <Header />
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex justify-center items-center h-64">
@@ -80,7 +99,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
 
     if (!forum) {
         return (
-            <div className="min-h-screen bg-gray-900 text-white">
+            <div className="min-h-screen bg-main-gray text-white">
                 <Header />
                 <div className="container mx-auto px-4 py-8">
                     <div className="text-center">
@@ -98,9 +117,9 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
+        <div className="min-h-screen bg-main-gray text-white">
             <Header />
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-8 mt-20">
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">{forum.name}</h1>
@@ -108,7 +127,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                     </div>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        className="bg-main-red hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                     >
                         Create Post
                     </button>
@@ -119,7 +138,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                         onClick={() => setSortBy('hot')}
                         className={`px-4 py-2 rounded-lg ${
                             sortBy === 'hot'
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-main-red text-white'
                                 : 'bg-gray-800 text-gray-400 hover:text-white'
                         }`}
                     >
@@ -129,7 +148,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                         onClick={() => setSortBy('new')}
                         className={`px-4 py-2 rounded-lg ${
                             sortBy === 'new'
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-main-red text-white'
                                 : 'bg-gray-800 text-gray-400 hover:text-white'
                         }`}
                     >
@@ -139,7 +158,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                         onClick={() => setSortBy('top')}
                         className={`px-4 py-2 rounded-lg ${
                             sortBy === 'top'
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-main-red text-white'
                                 : 'bg-gray-800 text-gray-400 hover:text-white'
                         }`}
                     >
@@ -151,36 +170,41 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                     {sortedPosts.map((post) => (
                         <div
                             key={post.id}
-                            onClick={() => router.push(`/forums/${params.gameId}/posts/${post.id}`)}
+                            onClick={() => router.push(`/forums/${resolvedParams.gameId}/posts/${post.id}`)}
                             className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors"
                         >
                             <div className="flex items-start gap-4">
-                                <div className="flex flex-col items-center">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            forumService.upvotePost(post.id);
-                                        }}
-                                        className="text-gray-400 hover:text-blue-500"
-                                    >
-                                        ▲
-                                    </button>
-                                    <span className="text-sm text-gray-400">{post.upvotes}</span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Implement downvote functionality
-                                        }}
-                                        className="text-gray-400 hover:text-red-500"
-                                    >
-                                        ▼
-                                    </button>
-                                </div>
                                 <div className="flex-1">
                                     <h2 className="text-xl font-semibold mb-2">{post.title}</h2>
                                     <p className="text-gray-400 mb-4 line-clamp-2">{post.content}</p>
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePostLike(post.id);
+                                                }}
+                                                className={`text-sm ${post.is_liked ? 'text-blue-500' : 'text-gray-400'} hover:text-blue-500`}
+                                            >
+                                                {post.is_liked ? '❤️' : '🤍'} Like
+                                            </button>
+                                            <span className="text-sm text-gray-400">{post.likes}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePostDislike(post.id);
+                                                }}
+                                                className={`text-sm ${post.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-red-700`}
+                                            >
+                                                {post.is_disliked ? '👎' : '👎'} Dislike
+                                            </button>
+                                            <span className="text-sm text-gray-400">{post.dislikes}</span>
+                                        </div>
+                                    </div>
                                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                                        <span>Posted by {post.user.name}</span>
+                                        <span>Posted by {post.user.username}</span>
                                         <span>•</span>
                                         <span>{new Date(post.created_at).toLocaleDateString()}</span>
                                         <span>•</span>
@@ -249,7 +273,7 @@ export default function GameForumPage({ params }: { params: { gameId: string } }
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
+                                        className="px-4 py-2 bg-main-red hover:bg-red-700 rounded-lg"
                                     >
                                         Create Post
                                     </button>

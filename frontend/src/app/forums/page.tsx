@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { forumService, Forum } from '@/services/forumService';
-import axios from 'axios';
+import axios from '@/services/auth';
+import { AxiosError } from 'axios';
 
 export default function ForumsPage() {
     const router = useRouter();
@@ -18,36 +19,47 @@ export default function ForumsPage() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Check if user is authenticated by making a request to the profile endpoint
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/profile`, { withCredentials: true })
-            .then(() => {
-                loadForums();
-            })
-            .catch(() => {
-                router.push('/');
-            });
-    }, [router]);
+        checkAuthAndLoadForums();
+    }, []);
+
+    const checkAuthAndLoadForums = async () => {
+        try {
+            // First check authentication
+            await axios.get('/profile');
+            setIsAuthenticated(true);
+            // If authenticated, load forums
+            await loadForums();
+        } catch (error: any) {
+            console.error('Authentication error:', error);
+            if (error instanceof AxiosError && error.response?.status === 401) {
+                router.push('/login');
+            } else {
+                setError('Failed to verify authentication. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadForums = async () => {
         try {
             setError(null);
             const data = await forumService.getForums();
             setForums(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading forums:', error);
-            if (axios.isAxiosError(error)) {
+            if (error instanceof AxiosError) {
                 if (error.response?.status === 401) {
-                    router.push('/');
+                    router.push('/login');
                 } else {
                     setError('Failed to load forums. Please try again later.');
                 }
             } else {
                 setError('An unexpected error occurred. Please try again later.');
             }
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -63,11 +75,11 @@ export default function ForumsPage() {
             setIsCreateModalOpen(false);
             setNewForum({ name: '', description: '', image: null });
             loadForums();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating forum:', error);
-            if (axios.isAxiosError(error)) {
+            if (error instanceof AxiosError) {
                 if (error.response?.status === 401) {
-                    router.push('/');
+                    router.push('/login');
                 } else {
                     setError('Failed to create forum. Please try again later.');
                 }
@@ -84,7 +96,7 @@ export default function ForumsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-900 text-white">
+            <div className="min-h-screen bg-main-gray text-white">
                 <Header />
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex justify-center items-center h-64">
@@ -95,10 +107,14 @@ export default function ForumsPage() {
         );
     }
 
+    if (!isAuthenticated) {
+        return null; // Don't render anything while redirecting
+    }
+
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
+        <div className="min-h-screen bg-main-gray text-white">
             <Header />
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-8 mt-20">
                 {error && (
                     <div className="bg-red-500 text-white p-4 rounded-lg mb-4">
                         {error}
@@ -108,7 +124,7 @@ export default function ForumsPage() {
                     <h1 className="text-3xl font-bold">Game Forums</h1>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        className="bg-main-red hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                     >
                         Create New Forum
                     </button>
@@ -134,9 +150,11 @@ export default function ForumsPage() {
                             <div className="aspect-w-16 aspect-h-9">
                                 {forum.image_url ? (
                                     <img
-                                        src={forum.image_url}
+                                        src={`http://127.0.0.1:8000${forum.image_url}`}
                                         alt={forum.name}
                                         className="object-cover w-full h-full"
+                                        onError={(e) => console.error('Image failed to load:', e)}
+                                        onLoad={() => console.log('Image loaded successfully:', `http://127.0.0.1:8000${forum.image_url}`)}
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-gray-700 flex items-center justify-center">
@@ -200,7 +218,7 @@ export default function ForumsPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
+                                        className="px-4 py-2 bg-main-red hover:bg-red-700 rounded-lg"
                                     >
                                         Create Forum
                                     </button>

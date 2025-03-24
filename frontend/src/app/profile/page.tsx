@@ -35,8 +35,10 @@ export default function Profile() {
                 }
 
                 const response = await axiosInstance.get<{ user: Profile }>('/profile');
+                console.log('Profile response:', response.data);
                 setProfile(response.data.user);
             } catch (err: any) {
+                console.error('Profile fetch error:', err);
                 setError("Error fetching profile. Please try again.");
                 if (err.response?.status === 401) {
                     router.push('/');
@@ -65,6 +67,8 @@ export default function Profile() {
             </div>
         );
     }
+
+    console.log('Current profile state:', profile);
 
     return (
         <div className="w-full h-full flex flex-col items-center bg-main-gray text-white">

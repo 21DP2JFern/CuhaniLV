@@ -14,7 +14,7 @@
     */
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'oauth/*'], // 🔥 Include 'oauth/*' for Passport
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'oauth/*', 'storage/*'], // Added storage/* to allow access to storage files
     'allowed_methods' => ['*'],
     'allowed_origins' => ['http://localhost:3000'], // 🔥 Change this to your frontend URL
     'allowed_origins_patterns' => [],

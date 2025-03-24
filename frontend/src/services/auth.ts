@@ -33,13 +33,13 @@ if (token) {
 
 export const login = async (email: string, password: string) => {
     try {
-        const response = await axiosInstance.post(`${API_URL}/login`, { email, password });
+        const response = await axiosInstance.post('/login', { email, password });
 
         if (response.data.token) {
             const token = response.data.token;
             Cookies.set('auth_token', token, {
                 expires: 30,
-                secure: process.env.NODE_ENV === 'production',
+                secure: false, // Set to false for local development
                 sameSite: 'Lax'
             });
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -47,19 +47,21 @@ export const login = async (email: string, password: string) => {
 
         return response.data;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'Login failed');
+        // Handle both axios error response and general error cases
+        const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+        throw new Error(errorMessage);
     }
 };
 
 export const register = async (data: any) => {
     try {
-        const response = await axiosInstance.post(`${API_URL}/register`, data);
+        const response = await axiosInstance.post('/register', data);
 
         if (response.data.token) {
             const token = response.data.token;
             Cookies.set('auth_token', token, {
                 expires: 30,
-                secure: process.env.NODE_ENV === 'production',
+                secure: false, // Set to false for local development
                 sameSite: 'Lax'
             });
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -73,12 +75,13 @@ export const register = async (data: any) => {
 
 export const logout = async () => {
     try {
-        await axiosInstance.post(`${API_URL}/logout`);
+        await axiosInstance.post('/logout');
         Cookies.remove('auth_token');
         delete axiosInstance.defaults.headers.common['Authorization'];
         return true;
-    } catch (error) {
-        throw new Error('Logout failed');
+    } catch (error: any) {
+        const errorMessage = error.response?.data?.message || error.message || 'Logout failed';
+        throw new Error(errorMessage);
     }
 };
 

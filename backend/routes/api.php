@@ -29,6 +29,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/forums/{forumId}/posts', [ForumController::class, 'createPost']);
     Route::get('/forums/{forumId}/posts/{postId}', [ForumController::class, 'showPost']);
     Route::post('/forums/posts/{postId}/comments', [ForumController::class, 'createComment']);
-    Route::post('/forums/posts/{postId}/upvote', [ForumController::class, 'upvotePost']);
-    Route::post('/forums/comments/{commentId}/upvote', [ForumController::class, 'upvoteComment']);
+    Route::post('/forums/posts/{postId}/like', [ForumController::class, 'likePost']);
+    Route::post('/forums/posts/{postId}/dislike', [ForumController::class, 'dislikePost']);
+    Route::post('/forums/comments/{commentId}/like', [ForumController::class, 'likeComment']);
+    Route::post('/forums/comments/{commentId}/dislike', [ForumController::class, 'dislikeComment']);
+    Route::put('/forums/posts/{postId}', [ForumController::class, 'updatePost']);
+    Route::delete('/forums/posts/{postId}', [ForumController::class, 'deletePost']);
 });

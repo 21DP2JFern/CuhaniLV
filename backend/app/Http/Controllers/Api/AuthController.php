@@ -92,6 +92,7 @@ class AuthController extends Controller
             "status" => true,
             "message" => "Profile information",
             "user" => [
+                "id" => $user->id,
                 "username" => $user->username,
                 "email" => $user->email,
                 "bio" => $user->bio,  
