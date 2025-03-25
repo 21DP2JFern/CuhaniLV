@@ -98,7 +98,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                     rows={3}
                     placeholder="Write a reply..."
                     required
@@ -302,14 +302,14 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                         type="text"
                                         value={editedPost.title}
                                         onChange={(e) => setEditedPost({ ...editedPost, title: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 mb-4"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red mb-4"
                                         required
                                     />
                                     <p>Content</p>
                                     <textarea
                                         value={editedPost.content}
                                         onChange={(e) => setEditedPost({ ...editedPost, content: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 mb-4"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red mb-4"
                                         rows={5}
                                         required
                                     />
@@ -409,7 +409,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                         <textarea
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                             rows={4}
                             placeholder="Write a comment..."
                             required

@@ -87,6 +87,12 @@ class AuthController extends Controller
                 "message" => "Unauthorized",
             ], 401);
         }
+
+        // Get user's posts with their forums
+        $posts = $user->posts()
+            ->with(['forum:id,name,slug'])
+            ->orderBy('created_at', 'desc')
+            ->get();
     
         return response()->json([
             "status" => true,
@@ -97,7 +103,8 @@ class AuthController extends Controller
                 "email" => $user->email,
                 "bio" => $user->bio,  
                 "profile_picture" => $user->profile_picture,  
-                "banner" => $user->banner,  
+                "banner" => $user->banner,
+                "posts" => $posts
             ],
         ]);
     }

@@ -239,7 +239,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                         type="text"
                                         value={newPost.title}
                                         onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                         required
                                     />
                                 </div>
@@ -248,7 +248,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                     <textarea
                                         value={newPost.content}
                                         onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                         rows={5}
                                         required
                                     />
@@ -259,7 +259,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                         type="text"
                                         value={newPost.tags}
                                         onChange={(e) => setNewPost({ ...newPost, tags: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                         placeholder="e.g., strategy, tips, bugs"
                                     />
                                 </div>

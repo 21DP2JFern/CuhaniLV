@@ -136,7 +136,7 @@ export default function ForumsPage() {
                         placeholder="Search forums..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-main-red"
                     />
                 </div>
 
@@ -185,7 +185,7 @@ export default function ForumsPage() {
                                         type="text"
                                         value={newForum.name}
                                         onChange={(e) => setNewForum({ ...newForum, name: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                         required
                                     />
                                 </div>
@@ -194,7 +194,7 @@ export default function ForumsPage() {
                                     <textarea
                                         value={newForum.description}
                                         onChange={(e) => setNewForum({ ...newForum, description: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                         rows={3}
                                         required
                                     />
@@ -205,7 +205,7 @@ export default function ForumsPage() {
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => setNewForum({ ...newForum, image: e.target.files?.[0] || null })}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-main-red"
                                     />
                                 </div>
                                 <div className="flex justify-end gap-4">
