@@ -20,6 +20,7 @@ export interface Forum {
 export interface Post {
     id: number;
     forum_id: number;
+    forum_name?: string;  // Optional since it's not always present
     user_id: number;
     title: string;
     content: string;

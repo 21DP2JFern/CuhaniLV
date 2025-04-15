@@ -110,7 +110,7 @@ export default function Profile() {
         <div className="w-full h-full flex flex-col items-center bg-main-gray text-white">
             <Header />
             {/* Profile Banner */}
-            <div className="w-[60%] h-56 mt-10 rounded-md bg-gray-700 flex justify-center items-center relative">
+            <div className="w-[60%] h-56 mt-24 rounded-md bg-gray-700 flex justify-center items-center relative">
                 {profile?.banner ? (
                     <img src={`${BACKEND_URL}${profile.banner}`} alt="Banner" className="w-full h-full rounded-md object-cover" />
                 ) : (

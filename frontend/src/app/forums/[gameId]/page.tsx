@@ -119,22 +119,36 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
     return (
         <div className="min-h-screen bg-main-gray text-white">
             <Header />
-            <div className="container mx-auto px-4 py-8 mt-20">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold mb-2">{forum.name}</h1>
-                        <p className="text-gray-400">{forum.description}</p>
-                    </div>
+            <div 
+                className="flex justify-between mt-24 mx-auto items-center bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative overflow-hidden"
+                style={{
+                    backgroundImage: forum.image_url ? `url(http://127.0.0.1:8000${forum.image_url})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    imageRendering: 'crisp-edges',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    backfaceVisibility: 'hidden'
+                }}
+            >
+                <div className="absolute inset-0 bg-gray-800 rounded-lg opacity-80" />
+                <div className='flex flex-col self-end w-full relative z-10'>
+                    <h1 className="text-3xl font-bold ">{forum.name}</h1>
+                    <p className="text-gray-400 -mb-10 w-[1000px]">{forum.description}</p>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-main-red hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        className="bg-main-red h-10 w-[120px] py-2 self-end hover:bg-red-700 text-white rounded-lg"
                     >
                         Create Post
                     </button>
                 </div>
+            </div>
+            <div className="container justify-center mx-auto px-4 py-8 mt-5">
+                
 
                 <div className="flex gap-4 mb-6">
-                    <button
+                    {/* <button
                         onClick={() => setSortBy('hot')}
                         className={`px-4 py-2 rounded-lg ${
                             sortBy === 'hot'
@@ -143,7 +157,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                         }`}
                     >
                         Hot
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => setSortBy('new')}
                         className={`px-4 py-2 rounded-lg ${
