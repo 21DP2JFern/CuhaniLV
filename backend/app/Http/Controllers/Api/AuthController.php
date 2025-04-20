@@ -104,7 +104,9 @@ class AuthController extends Controller
                 "bio" => $user->bio,  
                 "profile_picture" => $user->profile_picture,  
                 "banner" => $user->banner,
-                "posts" => $posts
+                "posts" => $posts,
+                "followers_count" => $user->followers()->count(),
+                "following_count" => $user->following()->count()
             ],
         ]);
     }
@@ -175,5 +177,52 @@ class AuthController extends Controller
                 "banner" => $user->banner,
             ],
         ]);
+    }
+
+    
+    public function showUserProfile($username)
+    {
+        $user = User::where('username', $username)
+            ->with('posts.tags', 'posts.forum')
+            ->withCount(['followers', 'following'])
+            ->firstOrFail();
+        $authUser = auth()->user();
+
+        return response()->json([
+            'user' => $user,
+            'is_following' => $authUser->following->contains($user->id)
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $users = User::where('username', 'LIKE', "%{$query}%")
+            ->select('id', 'username', 'profile_picture')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
+    }
+
+    public function searchUserProfile(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $users = User::where('username', 'LIKE', "%{$query}%")
+            ->select('id', 'username', 'profile_picture')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
     }
 }

@@ -208,7 +208,7 @@ export default function EditProfile() {
     return (
         <div className="w-full h-full flex flex-col items-center bg-main-gray text-white">
             <Header />
-            <form onSubmit={handleSubmit} className="w-full flex flex-col items-center">
+            <form onSubmit={handleSubmit} className="w-full flex flex-col mt-16 items-center">
                 {/* Profile Banner */}
                 <div className="w-[60%] h-56 mt-10 rounded-md bg-gray-700 flex justify-center items-center relative">
                     {previewBanner ? (

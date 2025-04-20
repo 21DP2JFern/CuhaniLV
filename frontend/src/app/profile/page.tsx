@@ -12,6 +12,8 @@ interface Profile {
     profile_picture?: string;
     banner?: string;
     posts?: Post[];
+    followers_count: number;
+    following_count: number;
 }
 
 interface Post {
@@ -35,12 +37,22 @@ interface Tag {
     tag: string;
 }
 
+interface Follower {
+    id: number;
+    username: string;
+    profile_picture?: string;
+}
+
 const BACKEND_URL = 'http://localhost:8000';
 
 export default function Profile() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [followers, setFollowers] = useState<Follower[]>([]);
+    const [following, setFollowing] = useState<Follower[]>([]);
+    const [showFollowers, setShowFollowers] = useState(false);
+    const [showFollowing, setShowFollowing] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -72,6 +84,38 @@ export default function Profile() {
 
         fetchProfile();
     }, [router]);
+
+    const fetchFollowers = async () => {
+        if (!profile?.username) return;
+        try {
+            const response = await axiosInstance.get<Follower[]>(`/users/${profile.username}/followers`);
+            setFollowers(response.data);
+        } catch (err) {
+            console.error('Error fetching followers:', err);
+        }
+    };
+
+    const fetchFollowing = async () => {
+        if (!profile?.username) return;
+        try {
+            const response = await axiosInstance.get<Follower[]>(`/users/${profile.username}/following`);
+            setFollowing(response.data);
+        } catch (err) {
+            console.error('Error fetching following:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (showFollowers && profile?.username) {
+            fetchFollowers();
+        }
+    }, [showFollowers, profile?.username]);
+
+    useEffect(() => {
+        if (showFollowing && profile?.username) {
+            fetchFollowing();
+        }
+    }, [showFollowing, profile?.username]);
 
     // Show a loading indicator while fetching
     if (loading) {
@@ -123,17 +167,32 @@ export default function Profile() {
             {/* Profile Picture */}
             <div className="w-40 h-40 rounded-full bg-gray-600 -mt-24 flex justify-center items-center border-4 border-gray-800 relative z-10 -ml-[34.5%]">
                 {profile?.profile_picture ? (
-                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-[153px] h-[153px] rounded-full object-cover" />
                 ) : (
                     <p className="text-gray-300">No Image</p>
                 )}
             </div>
 
             {/* Profile Info Container */}
-            <div className="w-[60%] -mt-12 flex justify-between items-start">
+            <div className="w-[60%] -mt-10 flex justify-between items-start">
                 {/* Username & Bio */}
                 <div className="w-[45%] ml-[30%]">
                     <h1 className="text-3xl font-semibold">{profile?.username ?? 'Unknown User'}</h1>
+                    <div className="flex gap-4 mt-2 text-gray-400">
+                        <button 
+                            onClick={() => setShowFollowers(!showFollowers)}
+                            className="hover:text-white transition-colors"
+                        >
+                            {profile?.followers_count} Followers
+                        </button>
+                        <span>•</span>
+                        <button 
+                            onClick={() => setShowFollowing(!showFollowing)}
+                            className="hover:text-white transition-colors"
+                        >
+                            {profile?.following_count} Following
+                        </button>
+                    </div>
                     <p className="text-gray-400 mt-2 break-words whitespace-pre-wrap">{profile?.bio ?? 'No bio available'}</p>
                 </div>
 
@@ -159,6 +218,41 @@ export default function Profile() {
                     </button>
                 </div>
             </div>
+
+            {/* Followers/Following Lists */}
+            {(showFollowers || showFollowing) && (
+                <div className="w-[60%] mt-4 bg-gray-800 rounded-lg p-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                        {showFollowers ? 'Followers' : 'Following'}
+                    </h2>
+                    <div className="grid gap-4">
+                        {(showFollowers ? followers : following).map((user) => (
+                            <div
+                                key={user.id}
+                                onClick={() => router.push(`/users/${user.username}`)}
+                                className="flex items-center gap-4 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-gray-600 overflow-hidden flex-shrink-0">
+                                    {user.profile_picture ? (
+                                        <img
+                                            src={`${BACKEND_URL}${user.profile_picture}`}
+                                            alt={user.username}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center text-sm text-gray-400 h-full">
+                                            No Img
+                                        </div>
+                                    )}
+                                </div>
+                                <span className="text-lg font-medium hover:text-main-red transition-colors">
+                                    {user.username}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Main Content Area */}
             <div className="w-full flex justify-end mt-16 mb-8">

@@ -47,7 +47,7 @@ export default function Header() {
                 <a href="/home" className={`text-main-red text-center transition-all duration-300 mx-12 ${pathname === '/home' ? 'text-main-white' : ''} ${
                     isScrolled ? 'text-4xl' : 'text-5xl'
                 }`}>Cuhani</a>
-                <a className={`text-main-red mx-4 font-light transition-all duration-300 hover:text-main-white relative group ${pathname === '/teammates' ? 'text-main-white' : ''} ${
+                <a href="/teammates" className={`text-main-red mx-4 font-light transition-all duration-300 hover:text-main-white relative group ${pathname === '/teammates' ? 'text-main-white' : ''} ${
                     isScrolled ? 'text-xl' : 'text-2xl'
                 }`}>
                     Teammates

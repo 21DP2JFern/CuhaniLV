@@ -120,22 +120,18 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         <div className="min-h-screen bg-main-gray text-white">
             <Header />
             <div 
-                className="flex justify-between mt-24 mx-auto items-center bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative overflow-hidden"
+                className="flex justify-between mt-24 mx-auto items-center bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative"
                 style={{
                     backgroundImage: forum.image_url ? `url(http://127.0.0.1:8000${forum.image_url})` : 'none',
                     backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    imageRendering: 'crisp-edges',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform: 'translateZ(0)',
-                    backfaceVisibility: 'hidden'
+                    backgroundPosition: '10% 10%',
+                    backgroundRepeat: 'no-repeat'
                 }}
             >
                 <div className="absolute inset-0 bg-gray-800 rounded-lg opacity-80" />
                 <div className='flex flex-col self-end w-full relative z-10'>
                     <h1 className="text-3xl font-bold ">{forum.name}</h1>
-                    <p className="text-gray-400 -mb-10 w-[1000px]">{forum.description}</p>
+                    <p className="text-gray-400 -mb-10">{forum.description}</p>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="bg-main-red h-10 w-[120px] py-2 self-end hover:bg-red-700 text-white rounded-lg"

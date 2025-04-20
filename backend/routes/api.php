@@ -2,8 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ForumController;
+use App\Http\Controllers\Api\FollowController;
 
 // Handle CORS preflight requests
 Route::options('/{any}', function() {
@@ -21,6 +23,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/users/{username}', [AuthController::class, 'showUserProfile']);
+    Route::get('/search/users', [AuthController::class, 'searchUserProfile']);
 
     // Forum routes
     Route::get('/forums', [ForumController::class, 'index']);
@@ -35,4 +39,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/forums/comments/{commentId}/dislike', [ForumController::class, 'dislikeComment']);
     Route::put('/forums/posts/{postId}', [ForumController::class, 'updatePost']);
     Route::delete('/forums/posts/{postId}', [ForumController::class, 'deletePost']);
+    // Follow routes
+    Route::post('/users/{username}/follow', [FollowController::class, 'follow']);
+    Route::delete('/users/{username}/unfollow', [FollowController::class, 'unfollow']);
+    Route::get('/users/{username}/followers', [FollowController::class, 'followers']);
+    Route::get('/users/{username}/following', [FollowController::class, 'following']);
 });
