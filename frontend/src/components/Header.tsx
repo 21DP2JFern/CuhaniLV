@@ -53,7 +53,7 @@ export default function Header() {
                     Teammates
                     <span className={`absolute -bottom-1 left-0 h-0.5 bg-main-white transition-all duration-300 ${pathname === '/teammates' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                 </a>
-                <a className={`text-main-red mx-4 font-light transition-all duration-300 hover:text-main-white relative group ${pathname === '/messages' ? 'text-main-white' : ''} ${
+                <a href="/messages" className={`text-main-red mx-4 font-light transition-all duration-300 hover:text-main-white relative group ${pathname === '/messages' ? 'text-main-white' : ''} ${
                     isScrolled ? 'text-xl' : 'text-2xl'
                 }`}>
                     Messages

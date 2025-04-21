@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import axiosInstance from '@/services/auth';
 import Cookies from 'js-cookie';
 import Header from '@/components/Header';
+import axios from '@/services/auth';
 
 interface Profile {
     id: number;
@@ -97,6 +98,19 @@ export default function PublicProfile() {
         }
     };
 
+    const handleMessage = async () => {
+        try {
+            // Create a new conversation by sending a message
+            await axios.post(`/users/${params.username}/messages`, {
+                content: 'Hello!',
+            });
+            // Redirect to messages page
+            router.push('/messages');
+        } catch (error) {
+            console.error('Error starting conversation:', error);
+        }
+    };
+
     if (loading) return <div className="text-white">Loading...</div>;
     if (error) return <div className="text-red-400">{error}</div>;
 
@@ -131,16 +145,22 @@ export default function PublicProfile() {
                     <p className="text-gray-400 mt-2 break-words whitespace-pre-wrap">{profile?.bio ?? 'No bio available'}</p>
                 </div>
 
-                <div className="flex space-x-4">
-                    <button 
-                        className={`px-6 py-2 transition-all duration-300 rounded-md text-white ${
-                            isFollowing 
-                                ? 'bg-gray-700 hover:bg-gray-600' 
-                                : 'bg-main-red hover:bg-red-700'
-                        }`}
+                <div className="flex gap-4">
+                    <button
                         onClick={handleFollowToggle}
+                        className={`px-6 py-2 rounded-lg ${
+                            isFollowing
+                                ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                : 'bg-main-red text-white hover:bg-red-700'
+                        }`}
                     >
                         {isFollowing ? 'Unfollow' : 'Follow'}
+                    </button>
+                    <button
+                        onClick={handleMessage}
+                        className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+                    >
+                        Message
                     </button>
                 </div>
             </div>

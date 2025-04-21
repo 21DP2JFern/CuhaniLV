@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\FollowController;
+use App\Http\Controllers\Api\MessageController;
 
 // Handle CORS preflight requests
 Route::options('/{any}', function() {
@@ -44,4 +45,10 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/users/{username}/unfollow', [FollowController::class, 'unfollow']);
     Route::get('/users/{username}/followers', [FollowController::class, 'followers']);
     Route::get('/users/{username}/following', [FollowController::class, 'following']);
+    Route::get('/users/following', [AuthController::class, 'following']);
+
+    // Message routes
+    Route::get('/conversations', [MessageController::class, 'conversations']);
+    Route::get('/conversations/{conversation}/messages', [MessageController::class, 'messages']);
+    Route::post('/users/{username}/messages', [MessageController::class, 'sendMessage']);
 });

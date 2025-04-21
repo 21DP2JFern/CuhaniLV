@@ -225,4 +225,19 @@ class AuthController extends Controller
 
         return response()->json($users);
     }
+
+    public function following()
+    {
+        try {
+            $users = Auth::user()
+                ->following()
+                ->select('id', 'username', 'profile_picture')
+                ->get();
+
+            return response()->json($users);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching following users: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch following users'], 500);
+        }
+    }
 }

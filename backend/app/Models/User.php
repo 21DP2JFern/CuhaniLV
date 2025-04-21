@@ -65,4 +65,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'user_followers', 'user_id', 'follower_id')->withTimestamps();
     }
+
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_user');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
 }
