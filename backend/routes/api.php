@@ -21,6 +21,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:api')->group(function () {
+    // Following posts route (must be before other user routes)
+    Route::get('/following/posts', [AuthController::class, 'followingPosts'])->name('following.posts');
+
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -31,6 +34,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/forums', [ForumController::class, 'index']);
     Route::post('/forums', [ForumController::class, 'store']);
     Route::get('/forums/{slug}', [ForumController::class, 'show']);
+    Route::post('/forums/{forumId}/join', [ForumController::class, 'joinForum']);
+    Route::post('/forums/{forumId}/leave', [ForumController::class, 'leaveForum']);
     Route::post('/forums/{forumId}/posts', [ForumController::class, 'createPost']);
     Route::get('/forums/{forumId}/posts/{postId}', [ForumController::class, 'showPost']);
     Route::post('/forums/posts/{postId}/comments', [ForumController::class, 'createComment']);
@@ -40,6 +45,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/forums/comments/{commentId}/dislike', [ForumController::class, 'dislikeComment']);
     Route::put('/forums/posts/{postId}', [ForumController::class, 'updatePost']);
     Route::delete('/forums/posts/{postId}', [ForumController::class, 'deletePost']);
+
     // Follow routes
     Route::post('/users/{username}/follow', [FollowController::class, 'follow']);
     Route::delete('/users/{username}/unfollow', [FollowController::class, 'unfollow']);

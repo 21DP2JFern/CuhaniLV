@@ -12,6 +12,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
     const [posts, setPosts] = useState<Post[]>([]);
     const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
     const [newPost, setNewPost] = useState({
         title: '',
         content: '',
@@ -71,6 +72,23 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         }
     };
 
+    const handleJoinForum = async () => {
+        if (!forum) return;
+        setIsJoining(true);
+        try {
+            if (forum.is_member) {
+                await forumService.leaveForum(forum.id);
+            } else {
+                await forumService.joinForum(forum.id);
+            }
+            await loadForumData();
+        } catch (error) {
+            console.error('Error toggling forum membership:', error);
+        } finally {
+            setIsJoining(false);
+        }
+    };
+
     const sortedPosts = [...posts].sort((a, b) => {
         switch (sortBy) {
             case 'hot':
@@ -120,7 +138,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         <div className="min-h-screen bg-main-gray text-white">
             <Header />
             <div 
-                className="flex justify-between mt-24 mx-auto items-center bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative"
+                className="flex flex-col justify-between mt-24 mx-auto bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative"
                 style={{
                     backgroundImage: forum.image_url ? `url(http://127.0.0.1:8000${forum.image_url})` : 'none',
                     backgroundSize: 'cover',
@@ -129,15 +147,33 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                 }}
             >
                 <div className="absolute inset-0 bg-gray-800 rounded-lg opacity-80" />
-                <div className='flex flex-col self-end w-full relative z-10'>
-                    <h1 className="text-3xl font-bold ">{forum.name}</h1>
-                    <p className="text-gray-400 -mb-10">{forum.description}</p>
+                <div className='relative z-10'>
+                    <h1 className="text-3xl font-bold">{forum.name}</h1>
+                    <p className="text-gray-400">{forum.description}</p>
+                    <div className="mt-2 text-gray-400">
+                        {forum.member_count} members
+                    </div>
+                </div>
+                <div className="flex gap-4 relative z-10">
                     <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-main-red h-10 w-[120px] py-2 self-end hover:bg-red-700 text-white rounded-lg"
+                        onClick={handleJoinForum}
+                        disabled={isJoining}
+                        className={`w-36 h-9 px-4 py-2 rounded-lg transition-colors ${
+                            forum.is_member 
+                                ? 'bg-gray-700 hover:bg-gray-600' 
+                                : 'bg-main-red hover:bg-red-700'
+                        }`}
                     >
-                        Create Post
+                        {isJoining ? 'Loading...' : forum.is_member ? 'Leave Forum' : 'Join Forum'}
                     </button>
+                    {forum.is_member && (
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="w-36 h-9 px-4 py-2 bg-main-red hover:bg-red-700 text-white rounded-lg"
+                        >
+                            Create Post
+                        </button>
+                    )}
                 </div>
             </div>
             <div className="container justify-center mx-auto px-4 py-8 mt-5">
@@ -239,8 +275,8 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                 </div>
 
                 {isCreateModalOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md relative z-50">
                             <h2 className="text-2xl font-bold mb-4">Create New Post</h2>
                             <form onSubmit={handleCreatePost}>
                                 <div className="mb-4">

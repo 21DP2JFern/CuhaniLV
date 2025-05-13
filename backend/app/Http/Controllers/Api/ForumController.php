@@ -7,9 +7,12 @@ use App\Models\Forum;
 use App\Models\Post;
 use App\Models\Comment;
 use App\Models\PostTag;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ForumController extends Controller
 {
@@ -53,16 +56,24 @@ class ForumController extends Controller
 
     public function show($slug)
     {
-        $forum = Forum::where('slug', $slug)->firstOrFail();
-        $posts = $forum->posts()
-            ->with(['user', 'tags'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $forum = Forum::where('slug', $slug)
+            ->with(['posts' => function ($query) {
+                $query->with(['user', 'tags'])
+                    ->withCount(['comments', 'likedBy', 'dislikedBy'])
+                    ->orderBy('created_at', 'desc');
+            }])
+            ->withCount('members')
+            ->firstOrFail();
+
+        $user = Auth::user();
+        $isMember = $user ? $user->forumMemberships()->where('forums.id', $forum->id)->exists() : false;
+        
+        // Add is_member to the forum object
+        $forum->is_member = $isMember;
 
         return response()->json([
-            'status' => true,
             'forum' => $forum,
-            'posts' => $posts
+            'posts' => $forum->posts
         ]);
     }
 
@@ -343,5 +354,85 @@ class ForumController extends Controller
             'status' => true,
             'message' => 'Post deleted successfully'
         ]);
+    }
+
+    public function joinForum($forumId)
+    {
+        try {
+            $user = Auth::user();
+            $forum = Forum::findOrFail($forumId);
+
+            DB::transaction(function () use ($user, $forum) {
+                // First check if the relationship exists
+                $exists = $user->games()->where('forum_id', $forum->id)->exists();
+
+                if ($exists) {
+                    // Update existing relationship
+                    $user->games()->updateExistingPivot($forum->id, [
+                        'is_member' => true,
+                        'joined_at' => now()
+                    ]);
+                } else {
+                    // Create new relationship
+                    $user->games()->attach($forum->id, [
+                        'is_member' => true,
+                        'joined_at' => now()
+                    ]);
+                }
+
+                $forum->increment('member_count');
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Successfully joined the forum',
+                'forum' => $forum->load('members')
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error joining forum: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to join forum',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function leaveForum($forumId)
+    {
+        try {
+            $user = Auth::user();
+            $forum = Forum::findOrFail($forumId);
+
+            DB::transaction(function () use ($user, $forum) {
+                // Check if the user is actually a member
+                $isMember = $user->games()
+                    ->where('forum_id', $forum->id)
+                    ->where('is_member', true)
+                    ->exists();
+
+                if ($isMember) {
+                    $user->games()->updateExistingPivot($forum->id, [
+                        'is_member' => false,
+                        'joined_at' => null
+                    ]);
+
+                    $forum->decrement('member_count');
+                }
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Successfully left the forum',
+                'forum' => $forum->load('members')
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error leaving forum: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to leave forum',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 } 

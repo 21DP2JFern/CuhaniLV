@@ -7,7 +7,9 @@ import { forumService, Post } from '@/services/forumService';
 export default function Home() {
   const router = useRouter();
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
+  const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [friendsLoading, setFriendsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPopularPosts = async () => {
@@ -40,7 +42,19 @@ export default function Home() {
       }
     };
 
+    const fetchFriendsPosts = async () => {
+      try {
+        const posts = await forumService.getFollowedUsersPosts();
+        setFriendsPosts(posts);
+      } catch (error) {
+        console.error('Error fetching friends posts:', error);
+      } finally {
+        setFriendsLoading(false);
+      }
+    };
+
     fetchPopularPosts();
+    fetchFriendsPosts();
   }, []);
 
   return (
@@ -81,6 +95,50 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Friends Posts */}
+        <div className="w-full lg:w-80 ml-4">
+          <div className="bg-gray-800 rounded-lg p-4 sticky top-24 h-[85%]">
+            <h2 className="text-xl font-bold mb-4">Friends' Posts</h2>
+            
+            {friendsLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : friendsPosts.length > 0 ? (
+              <div className="space-y-4 overflow-y-auto h-[calc(100%-3rem)]">
+                {friendsPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    onClick={() => router.push(`/forums/${post.forum_id}/posts/${post.id}`)}
+                    className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-xs text-main-red mb-1">
+                      <span>in</span>
+                      <span className="font-semibold">{post.forum_name}</span>
+                    </div>
+                    <h3 className="text-sm font-semibold mb-1 line-clamp-1">{post.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                      <span>by {post.user.username}</span>
+                      <span>•</span>
+                      <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span>❤️ {post.likes}</span>
+                      <span>👎 {post.dislikes}</span>
+                      <span>💬 {post.comment_count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-gray-400">
+                <p>No posts from friends yet</p>
+                <p className="text-sm mt-2">Follow some users to see their posts here</p>
               </div>
             )}
           </div>

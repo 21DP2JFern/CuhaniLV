@@ -26,14 +26,14 @@ class Conversation extends Model
         return $this->hasMany(Message::class)->orderBy('created_at', 'asc');
     }
 
-    public function getOtherUserAttribute()
+    public function otherUser()
     {
         return $this->users()->where('users.id', '!=', auth()->id())->first();
     }
 
-    public function getLastMessageAttribute()
+    public function lastMessage()
     {
-        return $this->messages()->latest()->first();
+        return $this->hasOne(Message::class)->latest();
     }
 
     public function getUnreadCountAttribute()

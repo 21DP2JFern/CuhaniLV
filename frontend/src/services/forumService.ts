@@ -10,9 +10,10 @@ export interface Forum {
     name: string;
     slug: string;
     description: string;
-    image_url: string | null;
+    image_url: string;
     member_count: number;
     post_count: number;
+    is_member?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -161,5 +162,26 @@ export const forumService = {
     // Delete a post
     deletePost: async (postId: number): Promise<void> => {
         await axios.delete(`${API_URL}/forums/posts/${postId}`);
+    },
+
+    // Get posts from followed users
+    getFollowedUsersPosts: async (): Promise<Post[]> => {
+        try {
+            console.log('Fetching posts from followed users...');
+            const response = await axios.get(`${API_URL}/following/posts`);
+            console.log('Response:', response.data);
+            return response.data.posts;
+        } catch (error) {
+            console.error('Error fetching followed users posts:', error);
+            throw error;
+        }
+    },
+
+    async joinForum(forumId: number): Promise<void> {
+        await axios.post(`${API_URL}/forums/${forumId}/join`);
+    },
+
+    async leaveForum(forumId: number): Promise<void> {
+        await axios.post(`${API_URL}/forums/${forumId}/leave`);
     },
 }; 

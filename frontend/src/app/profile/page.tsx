@@ -14,6 +14,7 @@ interface Profile {
     posts?: Post[];
     followers_count: number;
     following_count: number;
+    games?: Game[];
 }
 
 interface Post {
@@ -41,6 +42,12 @@ interface Follower {
     id: number;
     username: string;
     profile_picture?: string;
+}
+
+interface Game {
+    id: number;
+    name: string;
+    slug: string;
 }
 
 const BACKEND_URL = 'http://localhost:8000';
@@ -194,6 +201,23 @@ export default function Profile() {
                         </button>
                     </div>
                     <p className="text-gray-400 mt-2 break-words whitespace-pre-wrap">{profile?.bio ?? 'No bio available'}</p>
+                    
+                    {profile?.games && profile.games.length > 0 && (
+                        <div className="mt-4">
+                            <h2 className="text-xl font-semibold mb-2">Games</h2>
+                            <div className="flex flex-wrap gap-2">
+                                {profile.games.map((game) => (
+                                    <div
+                                        key={game.id}
+                                        onClick={() => router.push(`/forums/${game.slug}`)}
+                                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-sm cursor-pointer transition-colors"
+                                    >
+                                        {game.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Buttons */}

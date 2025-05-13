@@ -15,6 +15,7 @@ interface Profile {
     posts?: Post[];
     followers_count: number;
     following_count: number;
+    games?: Game[];
 }
 
 interface Post {
@@ -36,6 +37,12 @@ interface Post {
 interface Tag {
     id: number;
     tag: string;
+}
+
+interface Game {
+    id: number;
+    name: string;
+    slug: string;
 }
 
 const BACKEND_URL = 'http://localhost:8000';
@@ -100,14 +107,22 @@ export default function PublicProfile() {
 
     const handleMessage = async () => {
         try {
+            console.log('Attempting to message user:', params.username);
             // Create a new conversation by sending a message
-            await axios.post(`/users/${params.username}/messages`, {
+            const response = await axios.post(`/users/${params.username}/messages`, {
                 content: 'Hello!',
             });
+            console.log('Message sent successfully:', response.data);
             // Redirect to messages page
             router.push('/messages');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error starting conversation:', error);
+            console.error('Error details:', error.response?.data);
+            if (error.response?.status === 401) {
+                router.push('/login');
+            } else {
+                setError('Failed to start conversation. Please try again.');
+            }
         }
     };
 
@@ -143,6 +158,23 @@ export default function PublicProfile() {
                         <span>{profile?.following_count} Following</span>
                     </div>
                     <p className="text-gray-400 mt-2 break-words whitespace-pre-wrap">{profile?.bio ?? 'No bio available'}</p>
+                    
+                    {profile?.games && profile.games.length > 0 && (
+                        <div className="mt-4">
+                            <h2 className="text-xl font-semibold mb-2">Games</h2>
+                            <div className="flex flex-wrap gap-2">
+                                {profile.games.map((game) => (
+                                    <div
+                                        key={game.id}
+                                        onClick={() => router.push(`/forums/${game.slug}`)}
+                                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-sm cursor-pointer transition-colors"
+                                    >
+                                        {game.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-4">

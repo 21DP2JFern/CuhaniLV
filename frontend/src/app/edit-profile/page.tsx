@@ -4,12 +4,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import axiosInstance from '@/services/auth';
 import Cookies from 'js-cookie';
 import Header from '@/components/Header';
+import { forumService, Forum } from '@/services/forumService';
 
 interface Profile {
     username: string;
     bio?: string;
     profile_picture?: string;
     banner?: string;
+    games?: { id: number; name: string; slug: string; }[];
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -26,6 +28,8 @@ export default function EditProfile() {
     const [banner, setBanner] = useState<File | null>(null);
     const [previewProfilePicture, setPreviewProfilePicture] = useState<string>('');
     const [previewBanner, setPreviewBanner] = useState<string>('');
+    const [availableGames, setAvailableGames] = useState<Forum[]>([]);
+    const [selectedGames, setSelectedGames] = useState<number[]>([]);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -41,10 +45,11 @@ export default function EditProfile() {
                 }
 
                 const response = await axiosInstance.get<{ user: Profile }>('/profile');
-                console.log('Profile data:', response.data.user); // Debug log
+                console.log('Profile data:', response.data.user);
                 setProfile(response.data.user);
                 setUsername(response.data.user.username || '');
                 setBio(response.data.user.bio || '');
+                setSelectedGames(response.data.user.games?.map(game => game.id) || []);
             } catch (err: any) {
                 setError("Error fetching profile. Please try again.");
                 if (err.response?.status === 401) {
@@ -55,7 +60,17 @@ export default function EditProfile() {
             }
         };
 
+        const fetchGames = async () => {
+            try {
+                const games = await forumService.getForums();
+                setAvailableGames(games);
+            } catch (err) {
+                console.error('Error fetching games:', err);
+            }
+        };
+
         fetchProfile();
+        fetchGames();
     }, [router]);
 
     const compressImage = async (file: File): Promise<File> => {
@@ -168,6 +183,10 @@ export default function EditProfile() {
             const formData = new FormData();
             formData.append('username', username);
             formData.append('bio', bio);
+            // Send each game ID individually
+            selectedGames.forEach(gameId => {
+                formData.append('games[]', gameId.toString());
+            });
             
             if (profilePicture) {
                 formData.append('profile_picture', profilePicture);
@@ -279,6 +298,31 @@ export default function EditProfile() {
                             onChange={(e) => setBio(e.target.value)}
                             className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:border-main-red w-64 h-24 resize-none"
                         />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">Games I Play</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {availableGames.map((game) => (
+                                <label
+                                    key={game.id}
+                                    className="flex items-center space-x-2 p-2 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedGames.includes(game.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedGames([...selectedGames, game.id]);
+                                            } else {
+                                                setSelectedGames(selectedGames.filter(id => id !== game.id));
+                                            }
+                                        }}
+                                        className="form-checkbox h-4 w-4 text-main-red"
+                                    />
+                                    <span>{game.name}</span>
+                                </label>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

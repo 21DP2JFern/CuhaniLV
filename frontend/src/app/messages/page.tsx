@@ -84,12 +84,12 @@ export default function MessagesPage() {
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedConversation || !newMessage.trim()) return;
+        e.preventDefault(); // Prevent default form submission
+        if (!newMessage.trim() || !selectedConversation) return;
 
         try {
             setError(null);
-            await axios.post(`/users/${selectedConversation.other_user.id}/messages`, {
+            await axios.post(`/users/${selectedConversation.other_user.username}/messages`, {
                 content: newMessage,
             });
             setNewMessage('');
@@ -105,15 +105,16 @@ export default function MessagesPage() {
         }
     };
 
-    const handleStartConversation = async (userId: number) => {
+    const handleStartConversation = async (username: string) => {
         try {
             setError(null);
             // Create a new conversation by sending a message
-            await axios.post(`/users/${userId}/messages`, {
+            await axios.post(`/users/${username}/messages`, {
                 content: 'Hello!',
             });
             // Refresh conversations
             fetchConversations();
+            setIsNewConversationModalOpen(false);
         } catch (error: any) {
             console.error('Error starting conversation:', error);
             if (error.response?.status === 401) {
@@ -136,9 +137,9 @@ export default function MessagesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-main-gray text-white">
+        <div className="min-h-screen overflow-y-hidden bg-main-gray text-white">
             <Header />
-            <div className="container mx-auto px-4 py-8 mt-24">
+            <div className="container mx-auto px-4 py-8 mt-[70px]">
                 {error && (
                     <div className="mb-4 p-4 bg-red-900/20 rounded-lg text-main-red">
                         {error}
@@ -155,8 +156,7 @@ export default function MessagesPage() {
                 </div>
                 <div className="flex h-[calc(100vh-12rem)]">
                     {/* Conversations List */}
-                    <div className="w-1/3 border-r border-gray-700 pr-4">
-                        <h2 className="text-2xl font-bold mb-6">Messages</h2>
+                    <div className="w-1/3 border-r bg-gray-800 border-gray-700 p-4 rounded-lg">
                         <div className="space-y-4">
                             {conversations.map((conversation) => (
                                 <div

@@ -21,4 +21,19 @@ class Forum extends Model
     {
         return $this->hasMany(Post::class);
     }
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'user_games', 'forum_id', 'user_id')
+            ->wherePivot('is_member', true)
+            ->withPivot('joined_at')
+            ->withTimestamps();
+    }
+
+    public function allUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_games', 'forum_id', 'user_id')
+            ->withPivot('is_member', 'joined_at')
+            ->withTimestamps();
+    }
 } 

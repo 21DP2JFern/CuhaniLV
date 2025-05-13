@@ -18,20 +18,22 @@ class MessageController extends Controller
             
             $conversations = Auth::user()
                 ->conversations()
-                ->with(['otherUser', 'lastMessage'])
+                ->with(['users', 'lastMessage'])
                 ->get()
                 ->map(function ($conversation) {
                     \Log::info('Processing conversation: ' . $conversation->id);
+                    $otherUser = $conversation->otherUser();
+                    $lastMessage = $conversation->lastMessage;
                     return [
                         'id' => $conversation->id,
-                        'other_user' => [
-                            'id' => $conversation->otherUser->id,
-                            'username' => $conversation->otherUser->username,
-                            'profile_picture' => $conversation->otherUser->profile_picture,
-                        ],
-                        'last_message' => $conversation->lastMessage ? [
-                            'content' => $conversation->lastMessage->content,
-                            'created_at' => $conversation->lastMessage->created_at,
+                        'other_user' => $otherUser ? [
+                            'id' => $otherUser->id,
+                            'username' => $otherUser->username,
+                            'profile_picture' => $otherUser->profile_picture,
+                        ] : null,
+                        'last_message' => $lastMessage ? [
+                            'content' => $lastMessage->content,
+                            'created_at' => $lastMessage->created_at,
                         ] : null,
                         'unread_count' => $conversation->unread_count,
                     ];
@@ -43,7 +45,6 @@ class MessageController extends Controller
             \Log::error('Error fetching conversations: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json(['error' => 'Failed to fetch conversations', 'details' => $e->getMessage()], 500);
-            return response()->json(['error' => 'Failed to fetch conversations'], 500);
         }
     }
 
@@ -93,7 +94,16 @@ class MessageController extends Controller
             ]);
 
             // Find the user by username
-            $user = User::where('username', $username)->firstOrFail();
+            $user = User::where('username', $username)->first();
+            
+            if (!$user) {
+                \Log::error('User not found with username: ' . $username);
+                return response()->json([
+                    'error' => 'User not found',
+                    'details' => 'No user found with username: ' . $username
+                ], 404);
+            }
+            
             \Log::info('Found user: ' . $user->id);
 
             // Find or create conversation

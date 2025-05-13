@@ -56,6 +56,21 @@ class User extends Authenticatable
         return $this->hasMany(Post::class);
     }
 
+    public function games()
+    {
+        return $this->belongsToMany(Forum::class, 'user_games', 'user_id', 'forum_id')
+            ->withPivot('is_member', 'joined_at')
+            ->withTimestamps();
+    }
+
+    public function forumMemberships()
+    {
+        return $this->belongsToMany(Forum::class, 'user_games', 'user_id', 'forum_id')
+            ->wherePivot('is_member', true)
+            ->withPivot('joined_at')
+            ->withTimestamps();
+    }
+
     public function following()
     {
         return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'user_id')->withTimestamps();

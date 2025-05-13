@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Post;
 
 
 class AuthController extends Controller
@@ -93,6 +94,11 @@ class AuthController extends Controller
             ->with(['forum:id,name,slug'])
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Get user's games
+        $games = $user->games()
+            ->select('forums.id', 'forums.name', 'forums.slug')
+            ->get();
     
         return response()->json([
             "status" => true,
@@ -105,6 +111,7 @@ class AuthController extends Controller
                 "profile_picture" => $user->profile_picture,  
                 "banner" => $user->banner,
                 "posts" => $posts,
+                "games" => $games,
                 "followers_count" => $user->followers()->count(),
                 "following_count" => $user->following()->count()
             ],
@@ -126,7 +133,9 @@ class AuthController extends Controller
             'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
             'bio' => 'nullable|string|max:1000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'games' => 'nullable|array',
+            'games.*' => 'exists:forums,id'
         ]);
 
         // Update username if provided
@@ -167,6 +176,11 @@ class AuthController extends Controller
 
         $user->save();
 
+        // Update games if provided
+        if ($request->has('games')) {
+            $user->games()->sync($request->games);
+        }
+
         return response()->json([
             "status" => true,
             "message" => "Profile updated successfully",
@@ -175,6 +189,7 @@ class AuthController extends Controller
                 "bio" => $user->bio,
                 "profile_picture" => $user->profile_picture,
                 "banner" => $user->banner,
+                "games" => $user->games()->select('forums.id', 'forums.name', 'forums.slug')->get()
             ],
         ]);
     }
@@ -213,14 +228,23 @@ class AuthController extends Controller
     public function searchUserProfile(Request $request)
     {
         $query = $request->input('query');
+        $gameId = $request->input('game_id');
 
-        if (!$query) {
-            return response()->json([]);
+        $usersQuery = User::query()
+            ->where('id', '!=', auth()->id()); // Exclude current user
+
+        if ($query) {
+            $usersQuery->where('username', 'LIKE', "%{$query}%");
         }
 
-        $users = User::where('username', 'LIKE', "%{$query}%")
-            ->select('id', 'username', 'profile_picture')
-            ->limit(10)
+        if ($gameId) {
+            $usersQuery->whereHas('games', function ($q) use ($gameId) {
+                $q->where('forums.id', $gameId);
+            });
+        }
+
+        $users = $usersQuery->select('id', 'username', 'profile_picture', 'bio')
+            ->with(['games:id,name,slug'])
             ->get();
 
         return response()->json($users);
@@ -238,6 +262,47 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error fetching following users: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to fetch following users'], 500);
+        }
+    }
+
+    public function followingPosts()
+    {
+        try {
+            \Log::info('Fetching posts from followed users');
+            $followingIds = Auth::user()->following()->pluck('users.id');
+            \Log::info('Following IDs: ' . $followingIds->toJson());
+            
+            $posts = Post::whereIn('user_id', $followingIds)
+                ->with(['user:id,username,profile_picture', 'forum:id,name,slug'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            \Log::info('Found ' . $posts->count() . ' posts');
+            
+            $mappedPosts = $posts->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'forum_id' => $post->forum_id,
+                    'forum_name' => $post->forum->name,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'username' => $post->user->username,
+                        'profile_picture' => $post->user->profile_picture,
+                    ],
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'likes' => $post->likes,
+                    'dislikes' => $post->dislikes,
+                    'comment_count' => $post->comments()->count(),
+                    'created_at' => $post->created_at,
+                    'updated_at' => $post->updated_at,
+                ];
+            });
+
+            return response()->json(['posts' => $mappedPosts]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching following posts: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch following posts'], 500);
         }
     }
 }

@@ -7,13 +7,18 @@ export interface User {
     bio?: string;
     banner?: string;
     is_following?: boolean;
+    games?: {
+        id: number;
+        name: string;
+        slug: string;
+    }[];
 }
 
 export const userService = {
-    searchUsers: async (query: string): Promise<User[]> => {
+    searchUsers: async (query: string, gameId?: number | null): Promise<User[]> => {
         try {
             const response = await axios.get('/search/users', {
-                params: { query }
+                params: { query, game_id: gameId }
             });
             return response.data;
         } catch (error) {
