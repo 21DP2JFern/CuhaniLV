@@ -20,28 +20,32 @@ export interface Forum {
 
 export interface Post {
     id: number;
-    forum_id: number;
-    forum_name?: string;  // Optional since it's not always present
-    user_id: number;
     title: string;
     content: string;
-    likes: number;
-    dislikes: number;
-    is_liked: boolean;
-    is_disliked: boolean;
-    comment_count: number;
-    created_at: string;
-    updated_at: string;
     user: {
         id: number;
         username: string;
-        avatar_url: string | null;
+        profile_picture: string | null;
     };
+    forum: {
+        id: number;
+        slug: string;
+        name: string;
+    };
+    likes: number;
+    dislikes: number;
+    comment_count: number;
+    created_at: string;
+    is_liked: boolean;
+    is_disliked: boolean;
+    is_saved: boolean;
     tags: {
         id: number;
+        post_id: number;
         tag: string;
+        created_at: string;
+        updated_at: string;
     }[];
-    comments?: Comment[];
 }
 
 export interface Comment {
@@ -68,6 +72,12 @@ export const forumService = {
     // Get all forums
     getForums: async (): Promise<Forum[]> => {
         const response = await axios.get(`${API_URL}/forums`);
+        return response.data.forums;
+    },
+
+    // Get top forums by member count
+    getTopForums: async (): Promise<Forum[]> => {
+        const response = await axios.get(`${API_URL}/forums/top`);
         return response.data.forums;
     },
 
@@ -184,4 +194,21 @@ export const forumService = {
     async leaveForum(forumId: number): Promise<void> {
         await axios.post(`${API_URL}/forums/${forumId}/leave`);
     },
+
+    // Save a post
+    savePost: async (postId: number): Promise<{ is_saved: boolean }> => {
+        const response = await axios.post(`${API_URL}/forums/posts/${postId}/save`);
+        return response.data;
+    },
+
+    // Unsave a post
+    unsavePost: async (postId: number): Promise<{ is_saved: boolean }> => {
+        const response = await axios.post(`${API_URL}/forums/posts/${postId}/unsave`);
+        return response.data;
+    },
+
+    async getSavedPosts() {
+        const response = await axios.get('/saved-posts');
+        return response.data;
+    }
 }; 

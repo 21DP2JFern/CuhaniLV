@@ -260,10 +260,8 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
         return (
             <div className="min-h-screen bg-main-gray text-white">
                 <Header />
-                <div className="container mx-auto px-4 py-8">
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
+                <div className="flex justify-center items-center h-screen">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main-red"></div>
                 </div>
             </div>
         );

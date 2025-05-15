@@ -281,7 +281,7 @@ export default function EditProfile() {
                 </div>
 
                 {/* Username & Bio */}
-                <div className="-mt-12 -ml-[14%]">
+                <div className="-mt-12 -ml-[10%]">
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-1">Username</label>
                         <input

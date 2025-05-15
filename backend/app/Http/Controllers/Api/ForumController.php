@@ -25,6 +25,18 @@ class ForumController extends Controller
         ]);
     }
 
+    public function getTopForums()
+    {
+        $topForums = Forum::orderBy('member_count', 'desc')
+            ->take(4)
+            ->get();
+        
+        return response()->json([
+            'status' => true,
+            'forums' => $topForums
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -431,6 +443,85 @@ class ForumController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to leave forum',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function savePost($postId)
+    {
+        try {
+            $post = Post::findOrFail($postId);
+            $user = auth()->user();
+
+            if (!$post->isSavedBy($user)) {
+                $post->savedBy()->attach($user->id);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Post saved successfully',
+                'is_saved' => true
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error saving post: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to save post',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function unsavePost($postId)
+    {
+        try {
+            $post = Post::findOrFail($postId);
+            $user = auth()->user();
+
+            if ($post->isSavedBy($user)) {
+                $post->savedBy()->detach($user->id);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Post unsaved successfully',
+                'is_saved' => false
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error unsaving post: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to unsave post',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getSavedPosts()
+    {
+        try {
+            $user = auth()->user();
+            $savedPosts = $user->savedPosts()
+                ->with(['user', 'tags', 'forum'])
+                ->withCount(['comments', 'likedBy', 'dislikedBy'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Add is_saved flag to each post
+            $savedPosts->each(function ($post) {
+                $post->is_saved = true;
+            });
+
+            return response()->json([
+                'status' => true,
+                'posts' => $savedPosts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching saved posts: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to fetch saved posts',
                 'error' => $e->getMessage()
             ], 500);
         }

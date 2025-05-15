@@ -198,7 +198,7 @@ class AuthController extends Controller
     public function showUserProfile($username)
     {
         $user = User::where('username', $username)
-            ->with('posts.tags', 'posts.forum')
+            ->with(['posts.tags', 'posts.forum', 'games:id,name,slug'])
             ->withCount(['followers', 'following'])
             ->firstOrFail();
         $authUser = auth()->user();

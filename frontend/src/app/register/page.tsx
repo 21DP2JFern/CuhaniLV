@@ -1,8 +1,7 @@
 'use client'; //kautkas
 
 import React, { useState } from 'react';
-import axios from 'axios';
-import api from 'axios'; // Import your Axios instance
+import { register } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 
 export default function Register() {
@@ -30,19 +29,25 @@ export default function Register() {
     }
 
     try {
-      const response = await api.post('http://127.0.0.1:8000/api/register', {
+      const response = await register({
         email,
         username,
         password,
-        password_confirmation: confirmPassword, // Pass password confirmation
+        password_confirmation: confirmPassword,
       });
 
-      console.log('Registration successful:', response.data);
-      
+      console.log('Registration successful:', response);
       router.push('/');
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration failed:', error);
+      if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat();
+        setError(errorMessages.join(', '));
+      } else {
+        setError(error.message || 'Registration failed. Please try again.');
+      }
     }
   };
 

@@ -90,4 +90,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Message::class);
     }
+
+    public function savedPosts()
+    {
+        return $this->belongsToMany(Post::class, 'saved_posts')
+            ->withTimestamps();
+    }
 }

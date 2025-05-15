@@ -32,6 +32,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Forum routes
     Route::get('/forums', [ForumController::class, 'index']);
+    Route::get('/forums/top', [ForumController::class, 'getTopForums']);
     Route::post('/forums', [ForumController::class, 'store']);
     Route::get('/forums/{slug}', [ForumController::class, 'show']);
     Route::post('/forums/{forumId}/join', [ForumController::class, 'joinForum']);
@@ -45,6 +46,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/forums/comments/{commentId}/dislike', [ForumController::class, 'dislikeComment']);
     Route::put('/forums/posts/{postId}', [ForumController::class, 'updatePost']);
     Route::delete('/forums/posts/{postId}', [ForumController::class, 'deletePost']);
+    Route::post('/forums/posts/{postId}/save', [ForumController::class, 'savePost']);
+    Route::post('/forums/posts/{postId}/unsave', [ForumController::class, 'unsavePost']);
 
     // Follow routes
     Route::post('/users/{username}/follow', [FollowController::class, 'follow']);
@@ -57,4 +60,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/conversations', [MessageController::class, 'conversations']);
     Route::get('/conversations/{conversation}/messages', [MessageController::class, 'messages']);
     Route::post('/users/{username}/messages', [MessageController::class, 'sendMessage']);
+
+    // Saved posts route
+    Route::get('/saved-posts', [ForumController::class, 'getSavedPosts']);
 });

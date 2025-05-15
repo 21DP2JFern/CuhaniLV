@@ -117,4 +117,15 @@ class Post extends Model
             ]);
         }
     }
+
+    public function savedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'saved_posts')
+            ->withTimestamps();
+    }
+
+    public function isSavedBy(User $user): bool
+    {
+        return $this->savedBy()->where('user_id', $user->id)->exists();
+    }
 } 

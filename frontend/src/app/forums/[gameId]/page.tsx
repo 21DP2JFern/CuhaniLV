@@ -72,6 +72,25 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         }
     };
 
+    const handleSavePost = async (e: React.MouseEvent, postId: number) => {
+        e.stopPropagation();
+        try {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                if (post.is_saved) {
+                    await forumService.unsavePost(postId);
+                    post.is_saved = false;
+                } else {
+                    await forumService.savePost(postId);
+                    post.is_saved = true;
+                }
+                setPosts([...posts]);
+            }
+        } catch (error) {
+            console.error('Error toggling save:', error);
+        }
+    };
+
     const handleJoinForum = async () => {
         if (!forum) return;
         setIsJoining(true);
@@ -106,10 +125,8 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         return (
             <div className="min-h-screen bg-main-gray text-white">
                 <Header />
-                <div className="container mx-auto px-4 py-8">
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
+                <div className="flex justify-center items-center h-screen">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main-red"></div>
                 </div>
             </div>
         );
@@ -223,31 +240,38 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                 <div className="flex-1">
                                     <h2 className="text-xl font-semibold mb-2">{post.title}</h2>
                                     <p className="text-gray-400 mb-4 line-clamp-2">{post.content}</p>
-                                    <div className="flex items-center gap-4 mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handlePostLike(post.id);
-                                                }}
-                                                className={`text-sm ${post.is_liked ? 'text-blue-500' : 'text-gray-400'} hover:text-blue-500`}
-                                            >
-                                                {post.is_liked ? '❤️' : '🤍'} Like
-                                            </button>
-                                            <span className="text-sm text-gray-400">{post.likes}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handlePostDislike(post.id);
-                                                }}
-                                                className={`text-sm ${post.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-red-700`}
-                                            >
-                                                {post.is_disliked ? '👎' : '👎'} Dislike
-                                            </button>
-                                            <span className="text-sm text-gray-400">{post.dislikes}</span>
-                                        </div>
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handlePostLike(post.id);
+                                            }}
+                                            className={`flex items-center gap-1 ${
+                                                post.is_liked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
+                                            }`}
+                                        >
+                                            👍 {post.likes}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handlePostDislike(post.id);
+                                            }}
+                                            className={`flex items-center gap-1 ${
+                                                post.is_disliked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
+                                            }`}
+                                        >
+                                            👎 {post.dislikes}
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleSavePost(e, post.id)}
+                                            className={`flex items-center gap-1 ${
+                                                post.is_saved ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
+                                            }`}
+                                        >
+                                            {post.is_saved ? '🔖' : '📑'}
+                                        </button>
+                                        <span className="text-gray-400">💬 {post.comment_count}</span>
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-gray-500">
                                         <span>Posted by {post.user.username}</span>
@@ -256,12 +280,12 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                         <span>•</span>
                                         <span>{post.comment_count} comments</span>
                                     </div>
-                                    {post.tags.length > 0 && (
+                                    {post.tags && post.tags.length > 0 && (
                                         <div className="flex gap-2 mt-2">
                                             {post.tags.map((tag) => (
                                                 <span
                                                     key={tag.id}
-                                                    className="px-2 py-1 bg-gray-700 rounded-full text-xs"
+                                                    className="bg-gray-700 text-gray-300 px-2 py-1 rounded-full text-xs"
                                                 >
                                                     {tag.tag}
                                                 </span>

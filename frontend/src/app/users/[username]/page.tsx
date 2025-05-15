@@ -5,6 +5,7 @@ import axiosInstance from '@/services/auth';
 import Cookies from 'js-cookie';
 import Header from '@/components/Header';
 import axios from '@/services/auth';
+import UsersListModal from '@/components/UsersListModal';
 
 interface Profile {
     id: number;
@@ -56,6 +57,8 @@ export default function PublicProfile() {
     const [isFollowing, setIsFollowing] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showFollowersModal, setShowFollowersModal] = useState(false);
+    const [showFollowingModal, setShowFollowingModal] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -138,24 +141,34 @@ export default function PublicProfile() {
                 ) : (
                     <p className="text-gray-400">No banner uploaded</p>
                 )}
-                <div className="absolute -bottom-16 left-[15%] w-40 h-40 bg-main-gray rounded-full border-4 border-gray-800"></div>
+                
             </div>
 
-            <div className="w-40 h-40 rounded-full bg-gray-600 -mt-24 flex justify-center items-center border-4 border-gray-800 relative z-10 -ml-[34.5%]">
+
+            <div className="w-[60%] -mt-10 flex justify-between items-start">
+            <div className="min-w-40 min-h-40 mt-[5%] ml-[13%] rounded-full bg-gray-600 flex justify-center items-center border-4 border-gray-800 relative z-10 ">
                 {profile?.profile_picture ? (
-                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-[153px] h-[153px] rounded-full object-cover" />
+                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-[200px] h-[200px] rounded-full object-cover" />
                 ) : (
                     <p className="text-gray-300">No Image</p>
                 )}
             </div>
-
-            <div className="w-[60%] -mt-10 flex justify-between items-start">
-                <div className="w-[45%] ml-[30%]">
+                <div className="w-[45%] mt-[6%] -ml-[1%]">
                     <h1 className="text-3xl font-semibold">{profile?.username}</h1>
                     <div className="flex gap-4 mt-2 text-gray-400">
-                        <span>{profile?.followers_count} Followers</span>
+                        <button 
+                            onClick={() => setShowFollowersModal(true)}
+                            className="hover:text-white transition-colors"
+                        >
+                            {profile?.followers_count} Followers
+                        </button>
                         <span>•</span>
-                        <span>{profile?.following_count} Following</span>
+                        <button 
+                            onClick={() => setShowFollowingModal(true)}
+                            className="hover:text-white transition-colors"
+                        >
+                            {profile?.following_count} Following
+                        </button>
                     </div>
                     <p className="text-gray-400 mt-2 break-words whitespace-pre-wrap">{profile?.bio ?? 'No bio available'}</p>
                     
@@ -252,6 +265,20 @@ export default function PublicProfile() {
                     )}
                 </div>
             </div>
+
+            <UsersListModal
+                isOpen={showFollowersModal}
+                onClose={() => setShowFollowersModal(false)}
+                username={username}
+                type="followers"
+            />
+
+            <UsersListModal
+                isOpen={showFollowingModal}
+                onClose={() => setShowFollowingModal(false)}
+                username={username}
+                type="following"
+            />
         </div>
     );
 }
