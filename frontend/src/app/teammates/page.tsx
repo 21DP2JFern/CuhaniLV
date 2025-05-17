@@ -71,10 +71,10 @@ export default function UserSearchPage() {
     return (
         <div className="min-h-screen bg-main-gray text-white">
             <Header />
-            <div className="container mx-auto px-4 py-16 mt-12">
-                <h1 className="text-3xl font-bold mb-6">Find Teammates</h1>
-                <div className="flex gap-4 mb-8">
-                    <div className="w-1/2">
+            <div className="container mx-auto px-4 py-8 md:py-16 mt-12">
+                <h1 className="text-2xl md:text-3xl font-bold mb-6">Find Teammates</h1>
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                    <div className="w-full md:w-1/2">
                         <input
                             type="text"
                             placeholder="Search by username..."
@@ -86,7 +86,7 @@ export default function UserSearchPage() {
                             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-main-red"
                         />
                     </div>
-                    <div className="w-1/2">
+                    <div className="w-full md:w-1/2">
                         <select
                             value={selectedGame || ''}
                             onChange={(e) => {
@@ -127,7 +127,7 @@ export default function UserSearchPage() {
                     )
                 ) : (
                     <>
-                        <div className="grid grid-cols-5 gap-4 mb-6 mt-36">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6 mt-24 md:mt-36">
                             {currentUsers.map((user) => (
                                 <div
                                     key={user.id}
@@ -135,7 +135,7 @@ export default function UserSearchPage() {
                                     className="bg-gray-800 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors p-3 flex flex-col relative"
                                 >
                                     {/* Profile Picture Container */}
-                                    <div className="w-44 h-44 rounded-full bg-gray-700 overflow-hidden border-4 border-gray-800 absolute -top-20 left-1/2 transform -translate-x-1/2">
+                                    <div className="w-32 h-32 md:w-44 md:h-44 rounded-full bg-gray-700 overflow-hidden border-4 border-gray-800 absolute -top-16 md:-top-20 left-1/2 transform -translate-x-1/2">
                                         {user.profile_picture ? (
                                             <img
                                                 src={`http://127.0.0.1:8000${user.profile_picture}`}
@@ -150,18 +150,18 @@ export default function UserSearchPage() {
                                     </div>
 
                                     {/* Content Container */}
-                                    <div className="mt-24 text-center">
-                                        <h3 className="font-medium text-lg mb-1 truncate">
+                                    <div className="mt-20 md:mt-24 text-center">
+                                        <h3 className="font-medium text-base md:text-lg mb-1 truncate">
                                             {user.username}
                                         </h3>
                                         {user.bio && (
-                                            <p className="text-sm text-gray-400 line-clamp-2 mb-2">
+                                            <p className="text-xs md:text-sm text-gray-400 line-clamp-2 mb-2">
                                                 {user.bio}
                                             </p>
                                         )}
                                         {user.games && user.games.length > 0 && (
                                             <div className="mt-2">
-                                                <h4 className="text-sm text-gray-400 mb-1">Games</h4>
+                                                <h4 className="text-xs md:text-sm text-gray-400 mb-1">Games</h4>
                                                 <div className="flex flex-wrap gap-1 justify-center">
                                                     {user.games.map((game) => (
                                                         <span
@@ -185,39 +185,41 @@ export default function UserSearchPage() {
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex justify-center gap-2 mt-6">
+                        <div className="flex flex-wrap justify-center gap-2 mt-6">
                             {totalPages > 1 && (
                                 <>
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                         disabled={currentPage === 1}
-                                        className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+                                        className="px-3 md:px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 text-sm md:text-base"
                                     >
                                         Previous
                                     </button>
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-4 py-2 rounded-lg ${
-                                                currentPage === page
-                                                    ? 'bg-main-red'
-                                                    : 'bg-gray-800 hover:bg-gray-700'
-                                            }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 md:px-4 py-2 rounded-lg text-sm md:text-base ${
+                                                    currentPage === page
+                                                        ? 'bg-main-red'
+                                                        : 'bg-gray-800 hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                         disabled={currentPage === totalPages}
-                                        className="px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+                                        className="px-3 md:px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 text-sm md:text-base"
                                     >
                                         Next
                                     </button>
                                 </>
                             )}
-                            <div className="ml-4 px-4 py-2 bg-gray-800 rounded-lg">
+                            <div className="w-full md:w-auto mt-2 md:mt-0 md:ml-4 px-3 md:px-4 py-2 bg-gray-800 rounded-lg text-sm md:text-base text-center">
                                 Page {currentPage} of {Math.max(totalPages, 1)}
                             </div>
                         </div>

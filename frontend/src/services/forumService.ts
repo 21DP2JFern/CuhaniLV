@@ -22,30 +22,34 @@ export interface Post {
     id: number;
     title: string;
     content: string;
+    user_id: number;
     user: {
         id: number;
         username: string;
         profile_picture: string | null;
     };
-    forum: {
+    forum?: {
         id: number;
         slug: string;
         name: string;
     };
+    forum_id?: number;
+    forum_name?: string;
     likes: number;
     dislikes: number;
     comment_count: number;
     created_at: string;
-    is_liked: boolean;
-    is_disliked: boolean;
-    is_saved: boolean;
-    tags: {
+    is_liked?: boolean;
+    is_disliked?: boolean;
+    is_saved?: boolean;
+    tags?: {
         id: number;
         post_id: number;
         tag: string;
         created_at: string;
         updated_at: string;
     }[];
+    comments?: Comment[];
 }
 
 export interface Comment {
@@ -180,9 +184,17 @@ export const forumService = {
             console.log('Fetching posts from followed users...');
             const response = await axios.get(`${API_URL}/following/posts`);
             console.log('Response:', response.data);
+            if (!response.data.posts) {
+                console.error('No posts array in response:', response.data);
+                return [];
+            }
             return response.data.posts;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching followed users posts:', error);
+            if (error.response) {
+                console.error('Error response:', error.response.data);
+                console.error('Error status:', error.response.status);
+            }
             throw error;
         }
     },

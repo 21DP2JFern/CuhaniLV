@@ -154,9 +154,11 @@ export default function MessagesPage() {
                         New Conversation
                     </button>
                 </div>
-                <div className="flex h-[calc(100vh-12rem)]">
+                <div className="flex h-[calc(100vh-12rem)] flex-col md:flex-row">
                     {/* Conversations List */}
-                    <div className="w-1/3 border-r bg-gray-800 border-gray-700 p-4 rounded-lg">
+                    <div className={`w-full md:w-1/3 border-r bg-gray-800 border-gray-700 p-4 rounded-lg ${
+                        selectedConversation ? 'hidden md:block' : 'block'
+                    }`}>
                         <div className="space-y-4">
                             {conversations.map((conversation) => (
                                 <div
@@ -202,10 +204,20 @@ export default function MessagesPage() {
                     </div>
 
                     {/* Chat Area */}
-                    <div className="w-2/3 pl-4 flex flex-col">
+                    <div className={`w-full md:w-2/3 md:pl-4 flex flex-col ${
+                        selectedConversation ? 'block' : 'hidden md:flex'
+                    }`}>
                         {selectedConversation ? (
                             <>
                                 <div className="flex items-center gap-4 mb-6">
+                                    <button 
+                                        onClick={() => setSelectedConversation(null)}
+                                        className="md:hidden p-2 hover:bg-gray-700 rounded-lg"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                        </svg>
+                                    </button>
                                     <div className="w-12 h-12 rounded-full bg-gray-600 overflow-hidden flex-shrink-0">
                                         {selectedConversation.other_user.profile_picture ? (
                                             <img
@@ -219,12 +231,12 @@ export default function MessagesPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <h2 className="text-2xl font-bold">
+                                    <h2 className="text-xl md:text-2xl font-bold">
                                         {selectedConversation.other_user.username}
                                     </h2>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                                <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 md:px-0">
                                     {messages.map((message) => (
                                         <div
                                             key={message.id}
@@ -235,13 +247,13 @@ export default function MessagesPage() {
                                             }`}
                                         >
                                             <div
-                                                className={`max-w-[70%] p-4 rounded-lg ${
+                                                className={`max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-lg ${
                                                     message.user.id === selectedConversation.other_user.id
                                                         ? 'bg-gray-700'
                                                         : 'bg-main-red'
                                                 }`}
                                             >
-                                                <p>{message.content}</p>
+                                                <p className="text-sm md:text-base break-words">{message.content}</p>
                                                 <p className="text-xs text-gray-400 mt-1">
                                                     {new Date(message.created_at).toLocaleTimeString()}
                                                 </p>
@@ -250,25 +262,25 @@ export default function MessagesPage() {
                                     ))}
                                 </div>
 
-                                <form onSubmit={handleSendMessage} className="flex gap-4">
+                                <form onSubmit={handleSendMessage} className="flex gap-2">
                                     <input
                                         type="text"
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
                                         placeholder="Type a message..."
-                                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-main-red"
+                                        className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-red"
                                     />
                                     <button
                                         type="submit"
-                                        className="px-6 py-2 bg-main-red hover:bg-red-700 rounded-lg"
+                                        className="px-4 py-2 bg-main-red hover:bg-red-700 rounded-lg"
                                     >
                                         Send
                                     </button>
                                 </form>
                             </>
                         ) : (
-                            <div className="flex items-center justify-center h-full">
-                                <p className="text-gray-400">Select a conversation to start chatting</p>
+                            <div className="flex-1 flex items-center justify-center text-gray-400">
+                                <p>Select a conversation to start messaging</p>
                             </div>
                         )}
                     </div>

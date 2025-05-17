@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\NewsController;
 
 // Handle CORS preflight requests
 Route::options('/{any}', function() {
@@ -63,4 +65,19 @@ Route::middleware('auth:api')->group(function () {
 
     // Saved posts route
     Route::get('/saved-posts', [ForumController::class, 'getSavedPosts']);
+
+    // Admin routes
+    Route::get('/admin/users', [AdminController::class, 'getUsers']);
+    Route::get('/admin/stats', [AdminController::class, 'getStats']);
+    Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+    Route::delete('/admin/posts/{id}', [AdminController::class, 'deletePost']);
+});
+
+// News routes
+Route::middleware('auth:api')->group(function () {
+    Route::get('/news', [NewsController::class, 'index']);
+    Route::get('/news/{id}', [NewsController::class, 'show']);
+    Route::post('/news', [NewsController::class, 'store']);
+    Route::put('/news/{id}', [NewsController::class, 'update']);
+    Route::delete('/news/{id}', [NewsController::class, 'destroy']);
 });

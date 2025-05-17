@@ -141,19 +141,17 @@ export default function PublicProfile() {
                 ) : (
                     <p className="text-gray-400">No banner uploaded</p>
                 )}
-                
             </div>
 
-
-            <div className="w-[60%] -mt-10 flex justify-between items-start">
-            <div className="min-w-40 min-h-40 mt-[5%] ml-[13%] rounded-full bg-gray-600 flex justify-center items-center border-4 border-gray-800 relative z-10 ">
-                {profile?.profile_picture ? (
-                    <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-[200px] h-[200px] rounded-full object-cover" />
-                ) : (
-                    <p className="text-gray-300">No Image</p>
-                )}
-            </div>
-                <div className="w-[45%] mt-[6%] -ml-[1%]">
+            <div className="w-[60%] -mt-10 flex justify-between items-start relative">
+                <div className="min-w-40 min-h-40 mt-[5%] rounded-full bg-gray-600 flex justify-center items-center border-4 border-gray-800 relative z-10">
+                    {profile?.profile_picture ? (
+                        <img src={`${BACKEND_URL}${profile.profile_picture}`} alt="Profile" className="w-[200px] h-[200px] rounded-full object-cover" />
+                    ) : (
+                        <p className="text-gray-300">No Image</p>
+                    )}
+                </div>
+                <div className="w-[45%] mt-[6%]">
                     <h1 className="text-3xl font-semibold">{profile?.username}</h1>
                     <div className="flex gap-4 mt-2 text-gray-400">
                         <button 
@@ -190,7 +188,7 @@ export default function PublicProfile() {
                     )}
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-4 mt-[6%]">
                     <button
                         onClick={handleFollowToggle}
                         className={`px-6 py-2 rounded-lg ${
@@ -210,60 +208,58 @@ export default function PublicProfile() {
                 </div>
             </div>
 
-            <div className="w-full flex justify-end mt-16 mb-8">
-                <div className="w-[40%] mr-[22%]">
-                    <h2 className="text-2xl font-bold mb-4">{profile?.username}'s Posts</h2>
-                    {profile?.posts && profile.posts.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-4 auto-rows-[150px]">
-                            {profile.posts.map((post) => {
-                                const contentLength = post.content.length;
-                                const rowSpan = contentLength > 500 ? 3 : contentLength > 200 ? 2 : 1;
+            <div className="w-[60%] mt-16 mb-8">
+                <h2 className="text-2xl font-bold mb-4">{profile?.username}'s Posts</h2>
+                {profile?.posts && profile.posts.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4 auto-rows-[150px]">
+                        {profile.posts.map((post) => {
+                            const contentLength = post.content.length;
+                            const rowSpan = contentLength > 500 ? 3 : contentLength > 200 ? 2 : 1;
 
-                                return (
-                                    <div
-                                        key={post.id}
-                                        onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
-                                        className={`bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors row-span-${rowSpan}`}
-                                        style={{
-                                            gridRow: `span ${rowSpan}`,
-                                            display: 'flex',
-                                            flexDirection: 'column'
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm text-gray-400">in</span>
-                                            <span className="text-sm text-main-red">{post.forum.name}</span>
-                                        </div>
-                                        <h3 className="text-xl font-semibold mb-2 line-clamp-3">{post.title}</h3>
-                                        <p className="text-gray-400 mb-4 flex-grow line-clamp-6">{post.content}</p>
-                                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto">
-                                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                                            <span>•</span>
-                                            <span>{post.likes} likes</span>
-                                            <span>•</span>
-                                            <span>{post.dislikes} dislikes</span>
-                                            <span>•</span>
-                                            <span>{post.comment_count} comments</span>
-                                        </div>
-                                        {post.tags && post.tags.length > 0 && (
-                                            <div className="flex gap-2 mt-2 flex-wrap">
-                                                {post.tags.map((tag) => (
-                                                    <span key={tag.id} className="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                                                        {tag.tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                            return (
+                                <div
+                                    key={post.id}
+                                    onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
+                                    className={`bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors row-span-${rowSpan}`}
+                                    style={{
+                                        gridRow: `span ${rowSpan}`,
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm text-gray-400">in</span>
+                                        <span className="text-sm text-main-red">{post.forum.name}</span>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center text-gray-400 py-8">
-                            <p>This user hasn't made any posts yet.</p>
-                        </div>
-                    )}
-                </div>
+                                    <h3 className="text-xl font-semibold mb-2 line-clamp-3">{post.title}</h3>
+                                    <p className="text-gray-400 mb-4 flex-grow line-clamp-6">{post.content}</p>
+                                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto">
+                                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>{post.likes} likes</span>
+                                        <span>•</span>
+                                        <span>{post.dislikes} dislikes</span>
+                                        <span>•</span>
+                                        <span>{post.comment_count} comments</span>
+                                    </div>
+                                    {post.tags && post.tags.length > 0 && (
+                                        <div className="flex gap-2 mt-2 flex-wrap">
+                                            {post.tags.map((tag) => (
+                                                <span key={tag.id} className="px-2 py-1 bg-gray-700 rounded-full text-xs">
+                                                    {tag.tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center text-gray-400 py-8">
+                        <p>This user hasn't made any posts yet.</p>
+                    </div>
+                )}
             </div>
 
             <UsersListModal

@@ -155,7 +155,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         <div className="min-h-screen bg-main-gray text-white">
             <Header />
             <div 
-                className="flex flex-col justify-between mt-24 mx-auto bg-gray-800 h-[300px] w-[1536px] rounded-lg p-10 relative"
+                className="flex flex-col justify-between mt-24 mx-auto bg-gray-800 h-[300px] w-full max-w-[1536px] rounded-lg p-4 md:p-10 relative"
                 style={{
                     backgroundImage: forum.image_url ? `url(http://127.0.0.1:8000${forum.image_url})` : 'none',
                     backgroundSize: 'cover',
@@ -165,9 +165,9 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
             >
                 <div className="absolute inset-0 bg-gray-800 rounded-lg opacity-80" />
                 <div className='relative z-10'>
-                    <h1 className="text-3xl font-bold">{forum.name}</h1>
-                    <p className="text-gray-400">{forum.description}</p>
-                    <div className="mt-2 text-gray-400">
+                    <h1 className="text-2xl md:text-3xl font-bold">{forum.name}</h1>
+                    <p className="text-gray-400 text-sm md:text-base">{forum.description}</p>
+                    <div className="mt-2 text-gray-400 text-sm md:text-base">
                         {forum.member_count} members
                     </div>
                 </div>
@@ -175,7 +175,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                     <button
                         onClick={handleJoinForum}
                         disabled={isJoining}
-                        className={`w-36 h-9 px-4 py-2 rounded-lg transition-colors ${
+                        className={`w-28 md:w-36 h-9 px-2 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base ${
                             forum.is_member 
                                 ? 'bg-gray-700 hover:bg-gray-600' 
                                 : 'bg-main-red hover:bg-red-700'
@@ -186,14 +186,14 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                     {forum.is_member && (
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="w-36 h-9 px-4 py-2 bg-main-red hover:bg-red-700 text-white rounded-lg"
+                            className="w-28 md:w-36 h-9 px-2 md:px-4 py-2 bg-main-red hover:bg-red-700 text-white rounded-lg text-sm md:text-base"
                         >
                             Create Post
                         </button>
                     )}
                 </div>
             </div>
-            <div className="container justify-center mx-auto px-4 py-8 mt-5">
+            <div className="container mx-auto px-4 py-8 mt-5">
                 
 
                 <div className="flex gap-4 mb-6">
@@ -250,7 +250,10 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                                 post.is_liked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
                                             }`}
                                         >
-                                            👍 {post.likes}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_liked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                            </svg>
+                                            {post.likes}
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -261,7 +264,11 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                                 post.is_disliked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
                                             }`}
                                         >
-                                            👎 {post.dislikes}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_disliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                                            </svg>
+                                            {post.dislikes}
                                         </button>
                                         <button
                                             onClick={(e) => handleSavePost(e, post.id)}
@@ -269,9 +276,16 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                                 post.is_saved ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
                                             }`}
                                         >
-                                            {post.is_saved ? '🔖' : '📑'}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_saved ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                                            </svg>
                                         </button>
-                                        <span className="text-gray-400">💬 {post.comment_count}</span>
+                                        <span className="text-gray-400 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+                                            </svg>
+                                            {post.comment_count}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-gray-500">
                                         <span>Posted by {post.user.username}</span>

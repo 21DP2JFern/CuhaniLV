@@ -206,18 +206,25 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => handleCommentLike(comment.id)}
-                                        className={`text-sm ${comment.is_liked ? 'text-blue-500' : 'text-gray-400'} hover:text-blue-500`}
+                                        className={`text-sm ${comment.is_liked ? 'text-main-red' : 'text-gray-400'} hover:text-main-red`}
                                     >
-                                        {comment.is_liked ? '❤️' : '🤍'} Like
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill={comment.is_liked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                        </svg>
+                                        Like
                                     </button>
                                     <span className="text-sm text-gray-400">{comment.likes}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => handleCommentDislike(comment.id)}
-                                        className={`text-sm ${comment.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-red-700`}
+                                        className={`text-sm ${comment.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-main-red`}
                                     >
-                                        {comment.is_disliked ? '👎' : '👎'} Dislike
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill={comment.is_disliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                                        </svg>
+                                        Dislike
                                     </button>
                                     <span className="text-sm text-gray-400">{comment.dislikes}</span>
                                 </div>
@@ -367,18 +374,25 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={handlePostLike}
-                                                className={`text-sm ${post.is_liked ? 'text-blue-500' : 'text-gray-400'} hover:text-blue-500`}
+                                                className={`text-sm ${post.is_liked ? 'text-main-red' : 'text-gray-400'} hover:text-main-red`}
                                             >
-                                                {post.is_liked ? '❤️' : '🤍'} Like
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_liked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                                </svg>
+                                                Like
                                             </button>
                                             <span className="text-sm text-gray-400">{post.likes}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={handlePostDislike}
-                                                className={`text-sm ${post.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-red-700`}
+                                                className={`text-sm ${post.is_disliked ? 'text-main-red' : 'text-gray-400'} hover:text-main-red`}
                                             >
-                                                {post.is_disliked ? '👎' : '👎'} Dislike
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_disliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                                                </svg>
+                                                Dislike
                                             </button>
                                             <span className="text-sm text-gray-400">{post.dislikes}</span>
                                         </div>

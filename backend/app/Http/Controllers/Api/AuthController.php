@@ -81,7 +81,7 @@ class AuthController extends Controller
 
     public function profile(Request $request) {
         $user = Auth::user();
-    
+        
         if (!$user) {
             return response()->json([
                 "status" => false,
@@ -89,31 +89,19 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Get user's posts with their forums
-        $posts = $user->posts()
-            ->with(['forum:id,name,slug'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Get user's games
-        $games = $user->games()
-            ->select('forums.id', 'forums.name', 'forums.slug')
-            ->get();
-    
         return response()->json([
             "status" => true,
-            "message" => "Profile information",
             "user" => [
-                "id" => $user->id,
                 "username" => $user->username,
-                "email" => $user->email,
-                "bio" => $user->bio,  
-                "profile_picture" => $user->profile_picture,  
+                "bio" => $user->bio,
+                "profile_picture" => $user->profile_picture,
                 "banner" => $user->banner,
-                "posts" => $posts,
-                "games" => $games,
+                "role" => $user->role,
+                "games" => $user->games()->select('forums.id', 'forums.name', 'forums.slug')->get(),
+                "posts" => $user->posts()->with(['tags', 'forum'])->get(),
+                "saved_posts" => $user->savedPosts()->with(['tags', 'forum'])->get(),
                 "followers_count" => $user->followers()->count(),
-                "following_count" => $user->following()->count()
+                "following_count" => $user->following()->count(),
             ],
         ]);
     }
