@@ -305,9 +305,10 @@ class ForumController extends Controller
         ]);
 
         $post = Post::findOrFail($postId);
+        $user = auth()->user();
 
-        // Check if the user is the author of the post
-        if ($post->user_id !== auth()->id()) {
+        // Check if the user is either the author of the post or an admin
+        if ($post->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json([
                 'status' => false,
                 'message' => 'You are not authorized to edit this post'
