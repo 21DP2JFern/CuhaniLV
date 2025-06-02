@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { register } from '@/services/auth';
 import { useRouter } from 'next/navigation';
+import ErrorMessage from '@/components/ErrorMessage';
 
 export default function Register() {
   const router = useRouter();
@@ -10,21 +11,25 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Reset error state
+    setError(null);
+    setLoading(true);
 
     // Password length check
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
+      setLoading(false);
       return;
     }
 
     // Password match check
     if (password !== confirmPassword) {
       setError('Passwords do not match!');
+      setLoading(false);
       return;
     }
 
@@ -48,9 +53,10 @@ export default function Register() {
       } else {
         setError(error.message || 'Registration failed. Please try again.');
       }
+    } finally {
+      setLoading(false);
     }
   };
-
 
   return (
     <div className="flex flex-col md:flex-row w-full h-full">
@@ -79,36 +85,50 @@ export default function Register() {
       </div>
       <div className="flex flex-col bg-main-white h-[100%] w-full md:w-[40%]">
         <form className="flex flex-col mt-[10%] md:mt-[37%] mx-auto h-[50%] w-[80%] md:w-[30%]" onSubmit={handleRegister} method="post">
-          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
-          type="email" 
-          id="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}>
-          </input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
-           type="text" 
-           id="username"
-           placeholder="Username"
-           value={username}
-           onChange={(e) => setUsername(e.target.value)}>
-           </input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
-           type="password"
-           id="password" 
-           placeholder="Password"
-           value={password}
-           onChange={(e) => setPassword(e.target.value)}
+          {error && <ErrorMessage message={error} className="mb-4" />}
+          <input 
+            className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+            type="email" 
+            id="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input 
+            className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
+            type="text" 
+            id="username"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <input 
+            className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4"
+            type="password"
+            id="password" 
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <input 
+            className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+            type="password"
+            id="repeat-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repeat password"
+            required
+          />
+          <button 
+            className="bg-main-red text-main-white h-14 rounded-md mb-1 font-bold text-xl mt-4 disabled:opacity-50"
+            type="submit"
+            disabled={loading}
           >
-           </input>
-          <input className="h-14 mt-2 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
-          type="password"
-          id="repeat-password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Repeat password">
-          </input>
-          <button className="bg-main-red text-main-white h-14 rounded-md mb-1 font-bold text-xl mt-4">Register</button>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
           <div className="flex flex-row">
             <div className="h-0.5 w-[40%] my-7 ml-1 mr-2 bg-main-gray"></div>
             <p className="mt-2 text-center leading-5">Already have an account?</p>

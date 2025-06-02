@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import Header from '@/components/Header';
 import UsersListModal from '@/components/UsersListModal';
 import { forumService } from '@/services/forumService';
+import ErrorMessage from '@/components/ErrorMessage';
 
 // Define the profile structure
 interface Profile {
@@ -77,7 +78,7 @@ export default function Profile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = Cookies.get('auth_token');
+                const token = localStorage.getItem('auth_token');
                 if (!token) {
                     setError("User is not authenticated.");
                     setLoading(false);
@@ -228,9 +229,12 @@ export default function Profile() {
             <div className="min-h-screen bg-main-gray text-white">
                 <Header />
                 <div className="container mx-auto px-4 py-8 mt-20">
-                    <div className="text-center text-red-500">
-                        {error}
-                        <button onClick={() => router.push('/')} className="ml-4 text-blue-400 underline">
+                    <ErrorMessage message={error} className="max-w-md mx-auto" />
+                    <div className="text-center mt-4">
+                        <button 
+                            onClick={() => router.push('/')} 
+                            className="text-blue-400 hover:text-blue-300 underline"
+                        >
                             Go to Login
                         </button>
                     </div>
@@ -486,63 +490,53 @@ export default function Profile() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-[200px]">
-                                    {(activeTab === 'posts' ? posts : savedPosts)?.map((post) => {
-                                        const contentLength = post.content?.length || 0;
-                                        const rowSpan = contentLength > 500 ? 3 : contentLength > 200 ? 2 : 1;
-                                        
-                                        return (
-                                            <div
-                                                key={post.id}
-                                                onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
-                                                className={`bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors relative`}
-                                                style={{
-                                                    gridRow: `span ${rowSpan}`,
-                                                    display: 'flex',
-                                                    flexDirection: 'column'
-                                                }}
-                                            >
-                                                {profile?.role === 'admin' && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeletePost(post.id);
-                                                        }}
-                                                        className="absolute top-2 right-2 text-red-500 hover:text-red-400"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-sm text-gray-400">in</span>
-                                                    <span className="text-sm text-main-red">{post.forum?.name || 'Unknown Forum'}</span>
-                                                </div>
-                                                <h3 className="text-xl font-semibold mb-2 line-clamp-3">{post.title || 'Untitled Post'}</h3>
-                                                <p className="text-gray-400 mb-4 flex-grow line-clamp-6">{post.content || 'No content available'}</p>
-                                                <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto flex-wrap">
-                                                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                                                    <span>•</span>
-                                                    <span>{post.likes} likes</span>
-                                                    <span>•</span>
-                                                    <span>{post.dislikes} dislikes</span>
-                                                    <span>•</span>
-                                                    <span>{post.comment_count} comments</span>
-                                                </div>
-                                                {post.tags && post.tags.length > 0 && (
-                                                    <div className="flex gap-2 mt-2 flex-wrap">
-                                                        {post.tags.map((tag) => (
-                                                            <span
-                                                                key={tag.id}
-                                                                className="px-2 py-1 bg-gray-600 rounded-full text-xs"
-                                                            >
-                                                                {tag.tag}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {(activeTab === 'posts' ? posts : savedPosts)?.map((post) => (
+                                        <div
+                                            key={post.id}
+                                            onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
+                                            className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors relative flex flex-col overflow-y-visible"
+                                        >
+                                            {profile?.role === 'admin' && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeletePost(post.id);
+                                                    }}
+                                                    className="absolute top-2 right-2 text-red-500 hover:text-red-400"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm text-gray-400">in</span>
+                                                <span className="text-sm text-main-red">{post.forum?.name || 'Unknown Forum'}</span>
                                             </div>
-                                        );
-                                    })}
+                                            <h3 className="text-xl font-semibold mb-2">{post.title || 'Untitled Post'}</h3>
+                                            <p className="text-gray-400 mb-4 flex-grow whitespace-normal">{post.content || 'No content available'}</p>
+                                            <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto flex-wrap">
+                                                <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                                                <span>•</span>
+                                                <span>{post.likes} likes</span>
+                                                <span>•</span>
+                                                <span>{post.dislikes} dislikes</span>
+                                                <span>•</span>
+                                                <span>{post.comment_count} comments</span>
+                                            </div>
+                                            {post.tags && post.tags.length > 0 && (
+                                                <div className="flex gap-2 mt-2 flex-wrap">
+                                                    {post.tags.map((tag) => (
+                                                        <span
+                                                            key={tag.id}
+                                                            className="px-2 py-1 bg-gray-600 rounded-full text-xs"
+                                                        >
+                                                            {tag.tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                     {(activeTab === 'posts' ? posts : savedPosts).length === 0 && (
                                         <div className="col-span-2 text-center text-gray-400 py-8">
                                             <p>{activeTab === 'posts' ? 'You haven\'t made any posts yet.' : 'You haven\'t saved any posts yet.'}</p>

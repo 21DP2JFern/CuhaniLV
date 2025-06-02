@@ -2,34 +2,51 @@
 
 import React, { useState } from 'react';
 import Link from "next/link";
-import api from 'axios'; 
 import { useRouter } from 'next/navigation';
 import { login } from '@/services/auth';
+import ErrorMessage from '@/components/ErrorMessage';
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
+    setError(null);
+    setLoading(true);
+
+    // Basic validation
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await login(email, password);
-      if (response.status) {
-        console.log('Login successful');
-        setTimeout(() => {
-          router.push('/home');
-        }, 500);
-      }
+      const response = await login({ email, password });
+      console.log('Login successful:', response);
+      console.log('Attempting to redirect to /home');
+      router.push('/home');
+      console.log('router.push called.');
     } catch (error: any) {
       console.error('Login failed:', error);
-      setError(error.message || 'Login failed. Please try again.');
+      setError(error.message || 'Login failed. Please check your credentials and try again.');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="flex flex-col md:flex-row w-full h-full">
       <div className="flex flex-col bg-main-gray w-full md:w-[70%] h-[100%]">
@@ -57,28 +74,44 @@ export default function Home() {
       </div>
       <div className="flex flex-col bg-main-white h-[100%] w-full md:w-[40%]">
         <form className="flex flex-col mt-[10%] md:mt-[45%] mx-auto h-[40%] w-[80%] md:w-[30%]" onSubmit={handleLogin}>
-          <input className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
-          type="email" 
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="E-mail"
-          ></input>
-          <input className="h-14 mt-4 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
-          type="password" 
-          placeholder="Password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          ></input>
-          <button type="submit" className="bg-main-gray text-main-white h-14 rounded-md mt-6 font-bold text-xl">Log in</button>
+          {error && <ErrorMessage message={error} className="mb-4" />}
+          <input 
+            className="h-14 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+            type="email" 
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="E-mail"
+            required
+          />
+          <input 
+            className="h-14 mt-4 bg-main-white border-main-gray text-main-gray text-lg indent-2 border-solid border-2 rounded-md focus:border-main-red outline-none focus:border-4" 
+            type="password" 
+            placeholder="Password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button 
+            type="submit" 
+            className="bg-main-gray text-main-white h-14 rounded-md mt-6 font-bold text-xl disabled:opacity-50"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
           <div className="flex flex-row">
             <div className="h-0.5 w-[40%] my-4 ml-1 mr-2 bg-main-gray"></div>
             <p className="mt-1">Or</p>
             <div className="h-0.5 w-[40%] my-4 ml-2 bg-main-gray"></div>
           </div>
-          <button className="bg-main-red text-main-white h-14 rounded-md font-bold text-xl"
-          onClick={() =>{router.push("/register")}}>Register</button>
+          <button 
+            type="button"
+            className="bg-main-red text-main-white h-14 rounded-md font-bold text-xl"
+            onClick={() => router.push("/register")}
+          >
+            Register
+          </button>
         </form>
       </div>
     </div>

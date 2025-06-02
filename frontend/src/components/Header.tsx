@@ -14,7 +14,7 @@ export default function Header() {
     const pathname = usePathname();
 
     useEffect(() => {
-        const token = Cookies.get('auth_token');
+        const token = localStorage.getItem('auth_token');
         if (token) {
             setIsLoggedIn(true);
             // Fetch username
@@ -25,7 +25,7 @@ export default function Header() {
                 .catch(error => {
                     console.error('Error fetching profile:', error);
                     if (error.response?.status === 401) {
-                        Cookies.remove('auth_token');
+                        localStorage.removeItem('auth_token');
                         setIsLoggedIn(false);
                     }
                 });
@@ -40,13 +40,28 @@ export default function Header() {
         };
 
         window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+
+        // Listen for changes in local storage to update login status
+        const handleStorageChange = () => {
+            const token = localStorage.getItem('auth_token');
+            setIsLoggedIn(!!token); // Set isLoggedIn based on token presence
+            if (!token) {
+              setUsername(''); // Clear username if logged out
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('storage', handleStorageChange);
+        };
     }, []);
 
     const handleLogout = async () => {
         try {
             await axiosInstance.post('/logout');
-            Cookies.remove('auth_token');
+            localStorage.removeItem('auth_token');
             setIsLoggedIn(false);
             router.push('/');
         } catch (error) {

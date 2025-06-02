@@ -63,7 +63,7 @@ export default function PublicProfile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = Cookies.get('auth_token');
+                const token = localStorage.getItem('auth_token');
                 if (!token) {
                     router.push('/');
                     return;
@@ -85,7 +85,7 @@ export default function PublicProfile() {
 
     const handleFollowToggle = async () => {
         try {
-            const token = Cookies.get('auth_token');
+            const token = localStorage.getItem('auth_token');
             if (!token) return;
 
             if (isFollowing) {
@@ -211,49 +211,39 @@ export default function PublicProfile() {
             <div className="w-[60%] mt-16 mb-8">
                 <h2 className="text-2xl font-bold mb-4">{profile?.username}'s Posts</h2>
                 {profile?.posts && profile.posts.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4 auto-rows-[150px]">
-                        {profile.posts.map((post) => {
-                            const contentLength = post.content.length;
-                            const rowSpan = contentLength > 500 ? 3 : contentLength > 200 ? 2 : 1;
-
-                            return (
-                                <div
-                                    key={post.id}
-                                    onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
-                                    className={`bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors row-span-${rowSpan}`}
-                                    style={{
-                                        gridRow: `span ${rowSpan}`,
-                                        display: 'flex',
-                                        flexDirection: 'column'
-                                    }}
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm text-gray-400">in</span>
-                                        <span className="text-sm text-main-red">{post.forum.name}</span>
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2 line-clamp-3">{post.title}</h3>
-                                    <p className="text-gray-400 mb-4 flex-grow line-clamp-6">{post.content}</p>
-                                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto">
-                                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                                        <span>•</span>
-                                        <span>{post.likes} likes</span>
-                                        <span>•</span>
-                                        <span>{post.dislikes} dislikes</span>
-                                        <span>•</span>
-                                        <span>{post.comment_count} comments</span>
-                                    </div>
-                                    {post.tags && post.tags.length > 0 && (
-                                        <div className="flex gap-2 mt-2 flex-wrap">
-                                            {post.tags.map((tag) => (
-                                                <span key={tag.id} className="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                                                    {tag.tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {profile.posts.map((post) => (
+                            <div
+                                key={post.id}
+                                onClick={() => router.push(`/forums/${post.forum.slug}/posts/${post.id}`)}
+                                className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors relative flex flex-col overflow-y-visible"
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm text-gray-400">in</span>
+                                    <span className="text-sm text-main-red">{post.forum.name}</span>
                                 </div>
-                            );
-                        })}
+                                <h3 className="text-xl font-semibold mb-2">{post.title}</h3>
+                                <p className="text-gray-400 mb-4 flex-grow whitespace-normal">{post.content}</p>
+                                <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto flex-wrap">
+                                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                                    <span>•</span>
+                                    <span>{post.likes} likes</span>
+                                    <span>•</span>
+                                    <span>{post.dislikes} dislikes</span>
+                                    <span>•</span>
+                                    <span>{post.comment_count} comments</span>
+                                </div>
+                                {post.tags && post.tags.length > 0 && (
+                                    <div className="flex gap-2 mt-2 flex-wrap">
+                                        {post.tags.map((tag) => (
+                                            <span key={tag.id} className="px-2 py-1 bg-gray-700 rounded-full text-xs">
+                                                {tag.tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="text-center text-gray-400 py-8">
@@ -265,14 +255,14 @@ export default function PublicProfile() {
             <UsersListModal
                 isOpen={showFollowersModal}
                 onClose={() => setShowFollowersModal(false)}
-                username={username}
+                username={profile?.username || ''}
                 type="followers"
             />
 
             <UsersListModal
                 isOpen={showFollowingModal}
                 onClose={() => setShowFollowingModal(false)}
-                username={username}
+                username={profile?.username || ''}
                 type="following"
             />
         </div>

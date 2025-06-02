@@ -36,7 +36,7 @@ export default function EditProfile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = Cookies.get('auth_token');
+                const token = localStorage.getItem('auth_token');
                 if (!token) {
                     setError("User is not authenticated.");
                     setLoading(false);
