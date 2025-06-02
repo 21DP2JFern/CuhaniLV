@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { forumService, Post, Comment } from '@/services/forumService';
-import axios from '@/services/auth';
+import axiosInstance from '@/services/auth';
 
 export default function PostPage({ params }: { params: Promise<{ gameId: string; postId: string }> }) {
     const resolvedParams = use(params);
@@ -42,7 +42,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
 
     const loadCurrentUser = async () => {
         try {
-            const response = await axios.get('/profile');
+            const response = await axiosInstance.get('/profile');
             setCurrentUser({
                 id: response.data.user.id,
                 username: response.data.user.username
@@ -345,7 +345,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                                         setEditedPost({
                                                             title: post.title,
                                                             content: post.content,
-                                                            tags: post.tags.map(t => t.tag).join(', ')
+                                                            tags: post.tags?.map(t => t.tag).join(', ') || ''
                                                         });
                                                         setIsEditing(true);
                                                     }}
@@ -397,7 +397,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                             <span className="text-sm text-gray-400">{post.dislikes}</span>
                                         </div>
                                     </div>
-                                    {post.tags.length > 0 && (
+                                    {post.tags && post.tags.length > 0 && (
                                         <div className="flex gap-2">
                                             {post.tags.map((tag) => (
                                                 <span
