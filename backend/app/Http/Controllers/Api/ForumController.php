@@ -142,9 +142,7 @@ class ForumController extends Controller
                                           $query->with(['user', 'replies' => function($query) {
                                               $query->with(['user', 'replies' => function($query) {
                                                   $query->with(['user', 'replies' => function($query) {
-                                                      $query->with(['user', 'replies' => function($query) {
-                                                          $query->with('user');
-                                                      }]);
+                                                      $query->with('user');
                                                   }]);
                                               }]);
                                           }]);
@@ -162,6 +160,7 @@ class ForumController extends Controller
         if (auth()->check()) {
             $post->is_liked = $post->isLikedBy(auth()->user());
             $post->is_disliked = $post->isDislikedBy(auth()->user());
+            $post->current_user_role = auth()->user()->role;
         }
 
         // Add user's vote status to all comments

@@ -16,7 +16,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editedPost, setEditedPost] = useState({ title: '', content: '', tags: '' });
-    const [currentUser, setCurrentUser] = useState<{ id: number; username: string } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{ id: number; username: string; role: string } | null>(null);
 
     useEffect(() => {
         loadPostData();
@@ -45,7 +45,8 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
             const response = await axiosInstance.get('/profile');
             setCurrentUser({
                 id: response.data.user.id,
-                username: response.data.user.username
+                username: response.data.user.username,
+                role: response.data.user.role
             });
         } catch (error) {
             console.error('Error loading user:', error);
@@ -338,7 +339,7 @@ export default function PostPage({ params }: { params: Promise<{ gameId: string;
                                 <>
                                     <div className="flex justify-between items-start mb-4">
                                         <h1 className="text-3xl font-bold">{post.title}</h1>
-                                        {currentUser && currentUser.id === post.user_id && (
+                                        {currentUser && (currentUser.id === post.user_id || currentUser.role === 'admin') && (
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => {
