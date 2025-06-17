@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import axios from '@/services/auth';
+import { useState } from 'react';
 import { userService, User } from '../services/userService';
+import { useQuery } from '@tanstack/react-query';
 
 interface NewConversationModalProps {
     isOpen: boolean;
@@ -12,34 +12,22 @@ interface NewConversationModalProps {
 
 export default function NewConversationModal({ isOpen, onClose, onConversationStart }: NewConversationModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const searchUsers = async () => {
-            if (!searchQuery.trim()) {
-                setSearchResults([]);
-                return;
-            }
-
-            setLoading(true);
-            setError(null);
-
-            try {
-                const users = await userService.searchUsers(searchQuery.trim());
-                setSearchResults(users);
-            } catch (err: any) {
-                console.error('Search error:', err);
-                setError('Failed to search users. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const timer = setTimeout(searchUsers, 500);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
+    // Fetch users with search
+    const {
+        data: searchResults = [],
+        isLoading,
+        isError,
+        error
+    } = useQuery<User[]>({
+        queryKey: ['users', 'search', searchQuery],
+        queryFn: async () => {
+            if (!searchQuery.trim()) return [];
+            return userService.searchUsers(searchQuery.trim());
+        },
+        enabled: searchQuery.trim().length > 0,
+        staleTime: 30000, // 30 seconds
+    });
 
     if (!isOpen) return null;
 
@@ -65,14 +53,14 @@ export default function NewConversationModal({ isOpen, onClose, onConversationSt
                     />
                 </div>
 
-                {error && (
+                {isError && (
                     <div className="text-main-red mb-4 p-4 bg-red-900/20 rounded-lg">
-                        {error}
+                        {error instanceof Error ? error.message : 'Failed to search users. Please try again.'}
                     </div>
                 )}
 
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {loading ? (
+                    {isLoading ? (
                         <div className="flex justify-center items-center py-4">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-main-red"></div>
                         </div>

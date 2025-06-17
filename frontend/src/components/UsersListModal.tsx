@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+'use client'
+
 import { useRouter } from 'next/navigation';
 import axios from '@/services/auth';
+import { useQuery } from '@tanstack/react-query';
 
 interface User {
     id: number;
@@ -18,27 +20,23 @@ interface UsersListModalProps {
 const BACKEND_URL = 'http://localhost:8000';
 
 export default function UsersListModal({ isOpen, onClose, username, type }: UsersListModalProps) {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-        }
-    }, [isOpen, username, type]);
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
+    // Fetch users list
+    const {
+        data: users = [],
+        isLoading,
+        isError,
+        error
+    } = useQuery<User[]>({
+        queryKey: ['users', username, type],
+        queryFn: async () => {
             const response = await axios.get(`/users/${username}/${type}`);
-            setUsers(response.data);
-        } catch (error) {
-            console.error(`Error fetching ${type}:`, error);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return response.data;
+        },
+        enabled: isOpen,
+        staleTime: 60000, // 1 minute
+    });
 
     if (!isOpen) return null;
 
@@ -55,9 +53,13 @@ export default function UsersListModal({ isOpen, onClose, username, type }: User
                     </button>
                 </div>
                 <div className="overflow-y-auto flex-1 p-4">
-                    {loading ? (
+                    {isLoading ? (
                         <div className="flex justify-center items-center h-32">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-main-red"></div>
+                        </div>
+                    ) : isError ? (
+                        <div className="text-center text-main-red py-8">
+                            {error instanceof Error ? error.message : 'Failed to load users. Please try again.'}
                         </div>
                     ) : users.length === 0 ? (
                         <div className="text-center text-gray-400 py-8">

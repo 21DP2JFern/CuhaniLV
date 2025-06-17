@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect, use } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { forumService, Forum, Post } from '@/services/forumService';
+import { useQuery } from '@tanstack/react-query';
+
+const POSTS_PER_PAGE = 10;
 
 export default function GameForumPage({ params }: { params: Promise<{ gameId: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
-    const [forum, setForum] = useState<Forum | null>(null);
-    const [posts, setPosts] = useState<Post[]>([]);
     const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
@@ -18,23 +19,44 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         content: '',
         tags: '',
     });
-    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
 
-    useEffect(() => {
-        loadForumData();
-    }, [resolvedParams.gameId]);
+    // React Query for forum data
+    const {
+        data: forumData,
+        isLoading: isLoadingForum,
+        isFetching: isFetchingForum,
+        refetch: refetchForum,
+    } = useQuery<{ forum: Forum; posts: { data: Post[]; next_page_url: string | null } }>({
+        queryKey: ['forum', resolvedParams.gameId, currentPage],
+        queryFn: () => forumService.getForum(resolvedParams.gameId, currentPage, POSTS_PER_PAGE),
+        placeholderData: (prev) => prev,
+        staleTime: 120000,
+    });
 
-    const loadForumData = async () => {
-        try {
-            const data = await forumService.getForum(resolvedParams.gameId);
-            setForum(data.forum);
-            setPosts(data.posts);
-        } catch (error) {
-            console.error('Error loading forum data:', error);
-        } finally {
-            setLoading(false);
+    const forum: Forum | null = forumData?.forum || null;
+    const posts: Post[] = forumData?.posts?.data || [];
+    const hasMore: boolean = forumData?.posts?.next_page_url !== null;
+
+    // Debug logs
+    console.log('forumData:', forumData);
+    console.log('posts:', posts);
+
+    // Ensure posts is an array before iterating
+    const sortedPosts = Array.isArray(posts) ? [...posts].sort((a, b) => {
+        switch (sortBy) {
+            case 'hot':
+                return b.likes - a.likes;
+            case 'new':
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            case 'top':
+                return b.likes - a.likes;
+            default:
+                return 0;
         }
-    };
+    }) : [];
+
+    console.log('sortedPosts:', sortedPosts);
 
     const handleCreatePost = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,7 +70,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
             });
             setIsCreateModalOpen(false);
             setNewPost({ title: '', content: '', tags: '' });
-            loadForumData();
+            refetchForum();
         } catch (error) {
             console.error('Error creating post:', error);
         }
@@ -57,7 +79,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
     const handlePostLike = async (postId: number) => {
         try {
             await forumService.likePost(postId);
-            loadForumData();
+            refetchForum();
         } catch (error) {
             console.error('Error liking post:', error);
         }
@@ -66,7 +88,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
     const handlePostDislike = async (postId: number) => {
         try {
             await forumService.dislikePost(postId);
-            loadForumData();
+            refetchForum();
         } catch (error) {
             console.error('Error disliking post:', error);
         }
@@ -84,7 +106,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                     await forumService.savePost(postId);
                     post.is_saved = true;
                 }
-                setPosts([...posts]);
+                refetchForum();
             }
         } catch (error) {
             console.error('Error toggling save:', error);
@@ -100,7 +122,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
             } else {
                 await forumService.joinForum(forum.id);
             }
-            await loadForumData();
+            await refetchForum();
         } catch (error) {
             console.error('Error toggling forum membership:', error);
         } finally {
@@ -108,20 +130,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
         }
     };
 
-    const sortedPosts = [...posts].sort((a, b) => {
-        switch (sortBy) {
-            case 'hot':
-                return b.likes - a.likes;
-            case 'new':
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            case 'top':
-                return b.likes - a.likes;
-            default:
-                return 0;
-        }
-    });
-
-    if (loading) {
+    if (isLoadingForum || isFetchingForum) {
         return (
             <div className="min-h-screen bg-main-gray text-white">
                 <Header />
@@ -194,19 +203,7 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                 </div>
             </div>
             <div className="container mx-auto px-4 py-8 mt-5">
-                
-
                 <div className="flex gap-4 mb-6">
-                    {/* <button
-                        onClick={() => setSortBy('hot')}
-                        className={`px-4 py-2 rounded-lg ${
-                            sortBy === 'hot'
-                                ? 'bg-main-red text-white'
-                                : 'bg-gray-800 text-gray-400 hover:text-white'
-                        }`}
-                    >
-                        Hot
-                    </button> */}
                     <button
                         onClick={() => setSortBy('new')}
                         className={`px-4 py-2 rounded-lg ${
@@ -242,31 +239,24 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                                     <p className="text-gray-400 mb-4 line-clamp-2">{post.content}</p>
                                     <div className="flex items-center gap-4 mt-4">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handlePostLike(post.id);
-                                            }}
+                                            onClick={(e) => handlePostLike(post.id)}
                                             className={`flex items-center gap-1 ${
                                                 post.is_liked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
                                             }`}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_liked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75A2.25 2.25 0 0 1 16.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
                                             </svg>
                                             {post.likes}
                                         </button>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handlePostDislike(post.id);
-                                            }}
+                                            onClick={(e) => handlePostDislike(post.id)}
                                             className={`flex items-center gap-1 ${
                                                 post.is_disliked ? 'text-main-red' : 'text-gray-400 hover:text-main-red'
                                             }`}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill={post.is_disliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 0 1-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 0 0 .303-.54m.023-8.25H16.48a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 1 1.423.23M17.25 15H15m-8.25 0h2.25" />
                                             </svg>
                                             {post.dislikes}
                                         </button>
@@ -311,6 +301,18 @@ export default function GameForumPage({ params }: { params: Promise<{ gameId: st
                         </div>
                     ))}
                 </div>
+
+                {hasMore && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            className="bg-main-red hover:bg-red-700 text-white px-6 py-2 rounded-lg"
+                            disabled={isFetchingForum}
+                        >
+                            {isFetchingForum ? 'Loading...' : 'Load More'}
+                        </button>
+                    </div>
+                )}
 
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

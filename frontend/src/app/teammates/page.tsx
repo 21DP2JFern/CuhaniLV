@@ -1,72 +1,52 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { userService, User } from '@/services/userService';
 import { forumService, Forum } from '@/services/forumService';
+import { useQuery } from '@tanstack/react-query';
 
 export default function UserSearchPage() {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<User[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [availableGames, setAvailableGames] = useState<Forum[]>([]);
     const [selectedGame, setSelectedGame] = useState<number | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const router = useRouter();
 
     const USERS_PER_PAGE = 15; // 5 users per row * 3 rows
 
-    useEffect(() => {
-        const fetchGames = async () => {
-            try {
-                const games = await forumService.getForums();
-                setAvailableGames(games);
-            } catch (err) {
-                console.error('Error fetching games:', err);
-            }
-        };
+    // Fetch available games
+    const { data: gamesData } = useQuery({
+        queryKey: ['games'],
+        queryFn: async () => {
+            const response = await forumService.getForums();
+            return response.forums;
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
 
-        fetchGames();
-    }, []);
-
-    // Add debounce to prevent too many API calls
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (query.trim() || selectedGame) {
-                handleSearch();
-            } else {
-                setResults([]);
-            }
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [query, selectedGame]);
-
-    const handleSearch = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const users = await userService.searchUsers(query.trim(), selectedGame);
-            setResults(users);
-        } catch (err: any) {
-            console.error('Search error:', err);
-            if (err.response?.status === 401) {
-                router.push('/login');
-            } else {
-                setError('Failed to search users. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Fetch users with search
+    const { data: usersData, isLoading, isError, error } = useQuery({
+        queryKey: ['users', query, selectedGame],
+        queryFn: async () => {
+            if (!query.trim() && !selectedGame) return [];
+            return userService.searchUsers(query.trim(), selectedGame);
+        },
+        staleTime: 60000, // 1 minute
+        enabled: query.trim().length > 0 || selectedGame !== null,
+    });
 
     // Calculate pagination
-    const totalPages = Math.ceil(results.length / USERS_PER_PAGE);
+    const totalPages = Math.ceil((usersData?.length || 0) / USERS_PER_PAGE);
     const startIndex = (currentPage - 1) * USERS_PER_PAGE;
     const endIndex = startIndex + USERS_PER_PAGE;
-    const currentUsers = results.slice(startIndex, endIndex);
+    const currentUsers = usersData?.slice(startIndex, endIndex) || [];
+
+    // Ensure availableGames is an array before mapping
+    const gameOptions = Array.isArray(gamesData) ? gamesData.map((game) => (
+        <option key={game.id} value={game.id}>
+            {game.name}
+        </option>
+    )) : [];
 
     return (
         <div className="min-h-screen bg-main-gray text-white">
@@ -96,26 +76,22 @@ export default function UserSearchPage() {
                             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-main-red"
                         >
                             <option value="">Select a game</option>
-                            {availableGames.map((game) => (
-                                <option key={game.id} value={game.id}>
-                                    {game.name}
-                                </option>
-                            ))}
+                            {gameOptions}
                         </select>
                     </div>
                 </div>
 
-                {error && (
+                {isError && (
                     <div className="text-main-red mb-4 p-4 bg-red-900/20 rounded-lg">
-                        {error}
+                        {error instanceof Error ? error.message : 'Failed to search users. Please try again.'}
                     </div>
                 )}
 
-                {loading ? (
+                {isLoading ? (
                     <div className="flex justify-center items-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-main-red"></div>
                     </div>
-                ) : results.length === 0 ? (
+                ) : usersData?.length === 0 ? (
                     (query.trim() || selectedGame) ? (
                         <p className="text-gray-400 p-4 bg-gray-800/50 rounded-lg">
                             No users found matching your criteria

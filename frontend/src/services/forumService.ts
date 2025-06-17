@@ -73,10 +73,15 @@ export interface Comment {
 }
 
 export const forumService = {
-    // Get all forums
-    getForums: async (): Promise<Forum[]> => {
-        const response = await axios.get(`${API_URL}/forums`);
-        return response.data.forums;
+    // Get all forums (paginated)
+    getForums: async (page = 1, perPage = 12): Promise<{ forums: Forum[]; hasMore: boolean }> => {
+        const response = await axios.get(`${API_URL}/forums`, {
+            params: { page, per_page: perPage }
+        });
+        return {
+            forums: response.data.forums,
+            hasMore: response.data.hasMore,
+        };
     },
 
     // Get top forums by member count
@@ -103,8 +108,8 @@ export const forumService = {
     },
 
     // Get a specific forum by slug
-    getForum: async (slug: string): Promise<{ forum: Forum; posts: Post[] }> => {
-        const response = await axios.get(`${API_URL}/forums/${slug}`);
+    getForum: async (gameId: string, page: number = 1, perPage: number = 10): Promise<{ forum: Forum; posts: { data: Post[]; next_page_url: string | null } }> => {
+        const response = await axios.get(`${API_URL}/forums/${gameId}?page=${page}&per_page=${perPage}`);
         return response.data;
     },
 
@@ -222,5 +227,17 @@ export const forumService = {
     async getSavedPosts() {
         const response = await axios.get('/saved-posts');
         return response.data;
+    },
+
+    async getPopularPosts(page: number = 1, perPage: number = 6): Promise<{ posts: Post[], hasMore: boolean }> {
+        try {
+            const response = await axios.get(`${API_URL}/forums/popular-posts`, {
+                params: { page, per_page: perPage }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching popular posts:', error);
+            throw error;
+        }
     }
 }; 

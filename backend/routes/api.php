@@ -22,6 +22,9 @@ Route::options('/{any}', function() {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public routes
+Route::get('/forums/popular-posts', [ForumController::class, 'getPopularPosts']);
+
 Route::middleware('auth:api')->group(function () {
     // Following posts route (must be before other user routes)
     Route::get('/following/posts', [AuthController::class, 'followingPosts'])->name('following.posts');

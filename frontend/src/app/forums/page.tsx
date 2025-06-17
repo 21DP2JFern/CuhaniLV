@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { forumService, Forum } from '@/services/forumService';
-import axios from '@/services/auth';
+import { useQuery } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
+
+const FORUMS_PER_PAGE = 12;
 
 export default function ForumsPage() {
     const router = useRouter();
-    const [forums, setForums] = useState<Forum[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newForum, setNewForum] = useState({
@@ -17,51 +18,24 @@ export default function ForumsPage() {
         description: '',
         image: null as File | null,
     });
-    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    useEffect(() => {
-        checkAuthAndLoadForums();
-    }, []);
+    // React Query for forums
+    const {
+        data: forumsData,
+        isLoading,
+        isFetching,
+        refetch,
+    } = useQuery<{ forums: Forum[]; hasMore: boolean }>({
+        queryKey: ['forums', currentPage],
+        queryFn: () => forumService.getForums(currentPage, FORUMS_PER_PAGE),
+        placeholderData: (prev) => prev,
+        staleTime: 120000,
+    });
 
-    const checkAuthAndLoadForums = async () => {
-        try {
-            // First check authentication
-            await axios.get('/profile');
-            setIsAuthenticated(true);
-            // If authenticated, load forums
-            await loadForums();
-        } catch (error: any) {
-            console.error('Authentication error:', error);
-            if (error instanceof AxiosError && error.response?.status === 401) {
-                router.push('/login');
-            } else {
-                setError('Failed to verify authentication. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadForums = async () => {
-        try {
-            setError(null);
-            const data = await forumService.getForums();
-            setForums(data);
-        } catch (error: any) {
-            console.error('Error loading forums:', error);
-            if (error instanceof AxiosError) {
-                if (error.response?.status === 401) {
-                    router.push('/login');
-                } else {
-                    setError('Failed to load forums. Please try again later.');
-                }
-            } else {
-                setError('An unexpected error occurred. Please try again later.');
-            }
-        }
-    };
+    const forums: Forum[] = forumsData?.forums || [];
+    const hasMore: boolean = forumsData?.hasMore || false;
 
     const handleCreateForum = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,15 +48,11 @@ export default function ForumsPage() {
             });
             setIsCreateModalOpen(false);
             setNewForum({ name: '', description: '', image: null });
-            loadForums();
+            refetch();
         } catch (error: any) {
             console.error('Error creating forum:', error);
             if (error instanceof AxiosError) {
-                if (error.response?.status === 401) {
-                    router.push('/login');
-                } else {
-                    setError('Failed to create forum. Please try again later.');
-                }
+                setError('Failed to create forum. Please try again later.');
             } else {
                 setError('An unexpected error occurred. Please try again later.');
             }
@@ -93,21 +63,6 @@ export default function ForumsPage() {
         forum.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         forum.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-main-gray text-white">
-                <Header />
-                <div className="flex justify-center items-center h-screen">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main-red"></div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return null; // Don't render anything while redirecting
-    }
 
     return (
         <div className="min-h-screen bg-main-gray text-white">
@@ -138,39 +93,57 @@ export default function ForumsPage() {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredForums.map((forum) => (
-                        <div
-                            key={forum.id}
-                            onClick={() => router.push(`/forums/${forum.slug}`)}
-                            className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-700 transition-colors"
-                        >
-                            <div className="aspect-w-16 aspect-h-9">
-                                {forum.image_url ? (
-                                    <img
-                                        src={`http://127.0.0.1:8000${forum.image_url}`}
-                                        alt={forum.name}
-                                        className="object-cover w-full h-full"
-                                        onError={(e) => console.error('Image failed to load:', e)}
-                                        onLoad={() => console.log('Image loaded successfully:', `http://127.0.0.1:8000${forum.image_url}`)}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                                        <span className="text-4xl">🎮</span>
+                {isLoading || isFetching ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: FORUMS_PER_PAGE }).map((_, idx) => (
+                            <div key={idx} className="bg-gray-800 rounded-lg h-48 animate-pulse" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredForums.map((forum) => (
+                            <div
+                                key={forum.id}
+                                onClick={() => router.push(`/forums/${forum.slug}`)}
+                                className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-700 transition-colors"
+                            >
+                                <div className="aspect-w-16 aspect-h-9">
+                                    {forum.image_url ? (
+                                        <img
+                                            src={`http://127.0.0.1:8000${forum.image_url}`}
+                                            alt={forum.name}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                                            <span className="text-4xl">🎮</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4">
+                                    <h2 className="text-xl font-semibold mb-2">{forum.name}</h2>
+                                    <p className="text-gray-400 mb-4">{forum.description}</p>
+                                    <div className="flex justify-between text-sm text-gray-500">
+                                        <span>{forum.member_count} members</span>
+                                        <span>{forum.post_count} posts</span>
                                     </div>
-                                )}
-                            </div>
-                            <div className="p-4">
-                                <h2 className="text-xl font-semibold mb-2">{forum.name}</h2>
-                                <p className="text-gray-400 mb-4">{forum.description}</p>
-                                <div className="flex justify-between text-sm text-gray-500">
-                                    <span>{forum.member_count} members</span>
-                                    <span>{forum.post_count} posts</span>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
+
+                {hasMore && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            className="bg-main-red hover:bg-red-700 text-white px-6 py-2 rounded-lg"
+                            disabled={isFetching}
+                        >
+                            {isFetching ? 'Loading...' : 'Load More'}
+                        </button>
+                    </div>
+                )}
 
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">

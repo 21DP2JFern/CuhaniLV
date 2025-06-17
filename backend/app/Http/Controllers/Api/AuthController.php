@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Post;
+use App\Services\ImageService;
 
 
 class AuthController extends Controller
@@ -92,6 +93,7 @@ class AuthController extends Controller
         return response()->json([
             "status" => true,
             "user" => [
+                "id" => $user->id,
                 "username" => $user->username,
                 "bio" => $user->bio,
                 "profile_picture" => $user->profile_picture,
@@ -139,27 +141,31 @@ class AuthController extends Controller
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
             // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                $oldPath = str_replace('/storage/', '', $user->profile_picture);
-                Storage::delete('public/' . $oldPath);
-            }
+            ImageService::deleteImage($user->profile_picture);
             
-            $profilePicture = $request->file('profile_picture');
-            $profilePicturePath = $profilePicture->store('profile_pictures', 'public');
-            $user->profile_picture = '/storage/' . $profilePicturePath;
+            // Compress and store new profile picture
+            $user->profile_picture = ImageService::compressAndStore(
+                $request->file('profile_picture'),
+                'profile_pictures',
+                80,  // quality
+                400, // max width for profile pictures
+                400  // max height for profile pictures
+            );
         }
 
         // Handle banner upload
         if ($request->hasFile('banner')) {
             // Delete old banner if exists
-            if ($user->banner) {
-                $oldPath = str_replace('/storage/', '', $user->banner);
-                Storage::delete('public/' . $oldPath);
-            }
+            ImageService::deleteImage($user->banner);
             
-            $banner = $request->file('banner');
-            $bannerPath = $banner->store('banners', 'public');
-            $user->banner = '/storage/' . $bannerPath;
+            // Compress and store new banner
+            $user->banner = ImageService::compressAndStore(
+                $request->file('banner'),
+                'banners',
+                80,   // quality
+                1920, // max width for banners
+                1080  // max height for banners
+            );
         }
 
         $user->save();

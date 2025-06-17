@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import axios from '@/services/auth';
 import NewConversationModal from '@/components/NewConversationModal';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Conversation {
     id: number;
@@ -33,99 +34,93 @@ interface Message {
 
 export default function MessagesPage() {
     const router = useRouter();
-    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const queryClient = useQueryClient();
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-    const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
     const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
 
-    useEffect(() => {
-        fetchConversations();
-    }, []);
-
-    useEffect(() => {
-        if (selectedConversation) {
-            fetchMessages(selectedConversation.id);
-        }
-    }, [selectedConversation]);
-
-    const fetchConversations = async () => {
-        try {
-            setError(null);
+    // Fetch conversations
+    const {
+        data: conversations = [],
+        isLoading: isLoadingConversations,
+        isError: isErrorConversations,
+        error: conversationsError
+    } = useQuery<Conversation[]>({
+        queryKey: ['conversations'],
+        queryFn: async () => {
             const response = await axios.get('/conversations');
-            setConversations(response.data);
-        } catch (error: any) {
-            console.error('Error fetching conversations:', error);
-            if (error.response?.status === 401) {
-                router.push('/login');
-            } else {
-                setError('Failed to load conversations. Please try again later.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+            return response.data;
+        },
+        staleTime: 30000, // 30 seconds
+        refetchInterval: 30000, // Refetch every 30 seconds
+    });
 
-    const fetchMessages = async (conversationId: number) => {
-        try {
-            setError(null);
-            const response = await axios.get(`/conversations/${conversationId}/messages`);
-            setMessages(response.data);
-        } catch (error: any) {
-            console.error('Error fetching messages:', error);
+    // Fetch messages for selected conversation
+    const {
+        data: messages = [],
+        isLoading: isLoadingMessages,
+        isError: isErrorMessages,
+        error: messagesError
+    } = useQuery<Message[]>({
+        queryKey: ['messages', selectedConversation?.id],
+        queryFn: async () => {
+            if (!selectedConversation) return [];
+            const response = await axios.get(`/conversations/${selectedConversation.id}/messages`);
+            return response.data;
+        },
+        enabled: !!selectedConversation,
+        staleTime: 10000, // 10 seconds
+        refetchInterval: 10000, // Refetch every 10 seconds
+    });
+
+    // Send message mutation
+    const sendMessageMutation = useMutation({
+        mutationFn: async ({ content, username }: { content: string; username: string }) => {
+            await axios.post(`/users/${username}/messages`, { content });
+        },
+        onSuccess: () => {
+            setNewMessage('');
+            queryClient.invalidateQueries({ queryKey: ['messages', selectedConversation?.id] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        },
+        onError: (error: any) => {
             if (error.response?.status === 401) {
                 router.push('/login');
-            } else {
-                setError('Failed to load messages. Please try again later.');
             }
-        }
-    };
+        },
+    });
+
+    // Start new conversation mutation
+    const startConversationMutation = useMutation({
+        mutationFn: async (username: string) => {
+            await axios.post(`/users/${username}/messages`, { content: 'Hello!' });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            setIsNewConversationModalOpen(false);
+        },
+        onError: (error: any) => {
+            if (error.response?.status === 401) {
+                router.push('/login');
+            }
+        },
+    });
 
     const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault(); // Prevent default form submission
+        e.preventDefault();
         if (!newMessage.trim() || !selectedConversation) return;
 
-        try {
-            setError(null);
-            await axios.post(`/users/${selectedConversation.other_user.username}/messages`, {
-                content: newMessage,
-            });
-            setNewMessage('');
-            fetchMessages(selectedConversation.id);
-            fetchConversations(); // Refresh conversations to update last message
-        } catch (error: any) {
-            console.error('Error sending message:', error);
-            if (error.response?.status === 401) {
-                router.push('/login');
-            } else {
-                setError('Failed to send message. Please try again.');
-            }
-        }
+        sendMessageMutation.mutate({
+            content: newMessage,
+            username: selectedConversation.other_user.username,
+        });
     };
 
     const handleStartConversation = async (username: string) => {
-        try {
-            setError(null);
-            // Create a new conversation by sending a message
-            await axios.post(`/users/${username}/messages`, {
-                content: 'Hello!',
-            });
-            // Refresh conversations
-            fetchConversations();
-            setIsNewConversationModalOpen(false);
-        } catch (error: any) {
-            console.error('Error starting conversation:', error);
-            if (error.response?.status === 401) {
-                router.push('/login');
-            } else {
-                setError('Failed to start conversation. Please try again.');
-            }
-        }
+        startConversationMutation.mutate(username);
     };
 
-    if (loading) {
+    if (isLoadingConversations) {
         return (
             <div className="min-h-screen bg-main-gray text-white">
                 <Header />
@@ -136,13 +131,15 @@ export default function MessagesPage() {
         );
     }
 
+    const error = isErrorConversations ? conversationsError : isErrorMessages ? messagesError : null;
+
     return (
         <div className="min-h-screen overflow-y-hidden bg-main-gray text-white">
             <Header />
             <div className="container mx-auto px-4 py-8 mt-[70px]">
                 {error && (
                     <div className="mb-4 p-4 bg-red-900/20 rounded-lg text-main-red">
-                        {error}
+                        {error instanceof Error ? error.message : 'An error occurred. Please try again.'}
                     </div>
                 )}
                 <div className="flex justify-between items-center mb-6">
@@ -236,31 +233,40 @@ export default function MessagesPage() {
                                     </h2>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 md:px-0">
-                                    {messages.map((message) => (
-                                        <div
-                                            key={message.id}
-                                            className={`flex ${
-                                                message.user.id === selectedConversation.other_user.id
-                                                    ? 'justify-start'
-                                                    : 'justify-end'
-                                            }`}
-                                        >
+                                {isLoadingMessages ? (
+                                    <div className="flex-1 flex justify-center items-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-main-red"></div>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 md:px-0">
+                                        {messages.map((message) => (
                                             <div
-                                                className={`max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-lg ${
+                                                key={message.id}
+                                                className={`flex ${
                                                     message.user.id === selectedConversation.other_user.id
-                                                        ? 'bg-gray-700'
-                                                        : 'bg-main-red'
+                                                        ? 'justify-start'
+                                                        : 'justify-end'
                                                 }`}
                                             >
-                                                <p className="text-sm md:text-base break-words">{message.content}</p>
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    {new Date(message.created_at).toLocaleTimeString()}
-                                                </p>
+                                                <div
+                                                    className={`max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-lg ${
+                                                        message.user.id === selectedConversation.other_user.id
+                                                            ? 'bg-gray-700'
+                                                            : 'bg-main-red'
+                                                    }`}
+                                                >
+                                                    <p className="text-sm text-gray-300 mb-1">
+                                                        {message.user.username}
+                                                    </p>
+                                                    <p className="text-white">{message.content}</p>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {new Date(message.created_at).toLocaleTimeString()}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <form onSubmit={handleSendMessage} className="flex gap-2">
                                     <input
@@ -268,13 +274,15 @@ export default function MessagesPage() {
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
                                         placeholder="Type a message..."
-                                        className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-red"
+                                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-main-red"
+                                        disabled={sendMessageMutation.isPending}
                                     />
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-main-red hover:bg-red-700 rounded-lg"
+                                        disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                                        className="px-6 py-2 bg-main-red hover:bg-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        Send
+                                        {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
                                     </button>
                                 </form>
                             </>

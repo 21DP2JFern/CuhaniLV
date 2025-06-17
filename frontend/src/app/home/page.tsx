@@ -1,26 +1,47 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import { forumService, Forum, Post } from '@/services/forumService';
 import { newsService, NewsArticle } from '@/services/newsService';
+import Image from 'next/image';
 
 const BACKEND_URL = 'http://localhost:8000';
+const POSTS_PER_PAGE = 6;
 
 export default function Home() {
   const router = useRouter();
-  const [popularPosts, setPopularPosts] = useState<Post[]>([]);
-  const [friendsPosts, setFriendsPosts] = useState<Post[]>([]);
-  const [topForums, setTopForums] = useState<Forum[]>([]);
-  const [latestNews, setLatestNews] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [friendsLoading, setFriendsLoading] = useState(true);
-  const [forumsLoading, setForumsLoading] = useState(true);
-  const [newsLoading, setNewsLoading] = useState(true);
   const [popularSlide, setPopularSlide] = useState(0);
   const [friendsSlide, setFriendsSlide] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch data using React Query with parallel loading
+  const { data: newsData, isLoading: newsLoading } = useQuery<NewsArticle[]>({
+    queryKey: ['latestNews'],
+    queryFn: () => newsService.getLatestNews(3),
+    staleTime: 60000, // Consider data fresh for 1 minute
+  });
+
+  const { data: forumsData, isLoading: forumsLoading } = useQuery<Forum[]>({
+    queryKey: ['topForums'],
+    queryFn: () => forumService.getTopForums(),
+    staleTime: 300000, // Consider data fresh for 5 minutes
+  });
+
+  const { data: postsData, isLoading: postsLoading } = useQuery<{ posts: Post[], hasMore: boolean }>({
+    queryKey: ['popularPosts', currentPage],
+    queryFn: () => forumService.getPopularPosts(currentPage, POSTS_PER_PAGE),
+    staleTime: 60000, // Consider data fresh for 1 minute
+  });
+
+  const { data: friendsPostsData, isLoading: friendsLoading } = useQuery<Post[]>({
+    queryKey: ['friendsPosts'],
+    queryFn: () => forumService.getFollowedUsersPosts(),
+    staleTime: 30000, // Consider data fresh for 30 seconds
+  });
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -56,91 +77,32 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch latest news
-        const news = await newsService.getLatestNews(3);
-        setLatestNews(news);
-        setNewsLoading(false);
-
-        // Fetch top forums
-        const forums = await forumService.getTopForums();
-        setTopForums(forums);
-        setForumsLoading(false);
-
-        // Get all forums for popular posts
-        const allForums = await forumService.getForums();
-        
-        // Get posts from each forum and combine them
-        const allPosts: Post[] = [];
-        for (const forum of allForums) {
-          const { posts } = await forumService.getForum(forum.slug);
-          // Add forum information to each post
-          const postsWithForum = posts.map(post => ({
-            ...post,
-            forum: {
-              id: forum.id,
-              name: forum.name,
-              slug: forum.slug
-            }
-          }));
-          allPosts.push(...postsWithForum);
-        }
-        
-        // Sort posts by popularity (likes - dislikes) and get top 12 (4 pages of 3 posts each)
-        const sortedPosts = allPosts
-          .sort((a, b) => (b.likes - b.dislikes) - (a.likes - a.dislikes))
-          .slice(0, 12);
-        
-        setPopularPosts(sortedPosts);
-        setLoading(false);
-
-        // Fetch friends posts
-        console.log('Fetching followed users posts...');
-        const posts = await forumService.getFollowedUsersPosts();
-        console.log('Followed users posts response:', posts);
-        if (!posts || posts.length === 0) {
-          console.log('No posts received from followed users');
-        } else {
-          console.log('Number of posts received:', posts.length);
-          console.log('First post data:', posts[0]);
-        }
-        setFriendsPosts(posts);
-        setFriendsLoading(false);
-      } catch (error: any) {
-        console.error('Error fetching data:', error);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-          console.error('Error status:', error.response.status);
-        }
-        setLoading(false);
-        setFriendsLoading(false);
-        setForumsLoading(false);
-        setNewsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const loadMorePosts = () => {
+    if (postsData?.hasMore) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
 
   const nextPopularSlide = () => {
-    setPopularSlide((prev) => (prev + 1) % Math.ceil(popularPosts.length / 3));
+    setPopularSlide((prev) => (prev + 1) % Math.ceil((postsData?.posts.length || 0) / 3));
   };
 
   const prevPopularSlide = () => {
-    setPopularSlide((prev) => (prev - 1 + Math.ceil(popularPosts.length / 3)) % Math.ceil(popularPosts.length / 3));
+    setPopularSlide((prev) => (prev - 1 + Math.ceil((postsData?.posts.length || 0) / 3)) % Math.ceil((postsData?.posts.length || 0) / 3));
   };
 
   const nextFriendsSlide = () => {
-    setFriendsSlide((prev) => (prev + 1) % Math.ceil(friendsPosts.length / 3));
+    setFriendsSlide((prev) => (prev + 1) % Math.ceil((friendsPostsData?.length || 0) / 3));
   };
 
   const prevFriendsSlide = () => {
-    setFriendsSlide((prev) => (prev - 1 + Math.ceil(friendsPosts.length / 3)) % Math.ceil(friendsPosts.length / 3));
+    setFriendsSlide((prev) => (prev - 1 + Math.ceil((friendsPostsData?.length || 0) / 3)) % Math.ceil((friendsPostsData?.length || 0) / 3));
   };
 
-  if (loading || friendsLoading || forumsLoading || newsLoading) {
+  // Show loading state only for initial load
+  const isLoading = newsLoading && forumsLoading && postsLoading && friendsLoading;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-main-gray text-white">
         <Header />
@@ -168,7 +130,7 @@ export default function Home() {
             </a>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {latestNews.map((article) => (
+            {newsData?.map((article: NewsArticle) => (
               <div
                 key={article.id}
                 onClick={() => router.push(`/news/${article.id}`)}
@@ -176,10 +138,14 @@ export default function Home() {
               >
                 {article.image_url && (
                   <div className="aspect-w-16 aspect-h-9">
-                    <img
+                    <Image
                       src={article.image_url}
                       alt={article.title}
+                      width={400}
+                      height={300}
                       className="object-cover w-full h-48"
+                      loading="lazy"
+                      priority={false}
                     />
                   </div>
                 )}
@@ -197,10 +163,14 @@ export default function Home() {
                   <div className="flex items-center gap-2 mt-4">
                     <div className="w-6 h-6 rounded-full bg-gray-700 overflow-hidden">
                       {article.author.profile_picture ? (
-                        <img
+                        <Image
                           src={`${BACKEND_URL}${article.author.profile_picture}`}
                           alt={article.author.username}
+                          width={24}
+                          height={24}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          priority={false}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
@@ -217,7 +187,7 @@ export default function Home() {
         </div>
 
         {/* Friends Posts Section */}
-        {friendsPosts.length > 0 && (
+        {friendsPostsData && friendsPostsData.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6">Posts from Friends</h2>
             <div className="relative">
@@ -232,9 +202,9 @@ export default function Home() {
                   className="flex transition-transform duration-1000 ease-in-out"
                   style={{ transform: `translateX(-${friendsSlide * 100}%)` }}
                 >
-                  {Array.from({ length: Math.ceil(friendsPosts.length / 3) || 1 }).map((_, groupIndex) => (
+                  {Array.from({ length: Math.ceil(friendsPostsData.length / 3) || 1 }).map((_, groupIndex) => (
                     <div key={groupIndex} className="min-w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {friendsPosts.slice(groupIndex * 3, (groupIndex + 1) * 3).map((post) => {
+                      {friendsPostsData.slice(groupIndex * 3, (groupIndex + 1) * 3).map((post: Post) => {
                         const forumSlug = post.forum?.slug || post.forum_name;
                         const forumName = post.forum?.name || post.forum_name;
                         
@@ -309,7 +279,7 @@ export default function Home() {
 
               {/* Slide Indicators */}
               <div className="flex justify-center gap-2 mt-4">
-                {Array.from({ length: Math.ceil(friendsPosts.length / 3) || 1 }).map((_, index) => (
+                {Array.from({ length: Math.ceil(friendsPostsData.length / 3) || 1 }).map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setFriendsSlide(index)}
@@ -337,7 +307,7 @@ export default function Home() {
             </a>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {topForums.map((forum) => (
+            {forumsData?.map((forum: Forum) => (
               <div
                 key={forum.id}
                 onClick={() => router.push(`/forums/${forum.slug}`)}
@@ -345,10 +315,14 @@ export default function Home() {
               >
                 <div className="aspect-w-16 aspect-h-9">
                   {forum.image_url ? (
-                    <img
+                    <Image
                       src={`${BACKEND_URL}${forum.image_url}`}
                       alt={forum.name}
+                      width={400}
+                      height={300}
                       className="object-cover w-full h-48"
+                      loading="lazy"
+                      priority={false}
                     />
                   ) : (
                     <div className="w-full h-48 bg-gray-700 flex items-center justify-center">
@@ -384,9 +358,9 @@ export default function Home() {
                 className="flex transition-transform duration-1000 ease-in-out"
                 style={{ transform: `translateX(-${popularSlide * 100}%)` }}
               >
-                {Array.from({ length: Math.ceil(popularPosts.length / 3) }).map((_, groupIndex) => (
+                {Array.from({ length: Math.ceil((postsData?.posts.length || 0) / 3) }).map((_, groupIndex) => (
                   <div key={groupIndex} className="min-w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {popularPosts.slice(groupIndex * 3, (groupIndex + 1) * 3).map((post) => (
+                    {postsData?.posts.slice(groupIndex * 3, (groupIndex + 1) * 3).map((post: Post) => (
                       <div
                         key={post.id}
                         onClick={() => router.push(`/forums/${post.forum?.slug || ''}/posts/${post.id}`)}
@@ -450,7 +424,7 @@ export default function Home() {
 
             {/* Slide Indicators */}
             <div className="flex justify-center gap-2 mt-4">
-              {Array.from({ length: Math.ceil(popularPosts.length / 3) }).map((_, index) => (
+              {Array.from({ length: Math.ceil((postsData?.posts.length || 0) / 3) }).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setPopularSlide(index)}

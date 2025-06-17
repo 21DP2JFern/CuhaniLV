@@ -41,9 +41,15 @@ export const login = async (credentials: LoginCredentials) => {
     try {
         const response = await axiosInstance.post('/login', credentials);
         
+        if (response.data.status === false) {
+            throw new Error(response.data.message || 'Login failed');
+        }
+        
         if (response.data.token) {
             localStorage.setItem('auth_token', response.data.token);
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        } else {
+            throw new Error('No authentication token received');
         }
         
         return response.data;

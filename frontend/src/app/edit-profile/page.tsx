@@ -62,10 +62,11 @@ export default function EditProfile() {
 
         const fetchGames = async () => {
             try {
-                const games = await forumService.getForums();
-                setAvailableGames(games);
+                const response = await forumService.getForums();
+                setAvailableGames(response.forums || []);
             } catch (err) {
                 console.error('Error fetching games:', err);
+                setAvailableGames([]);
             }
         };
 
@@ -279,16 +280,16 @@ export default function EditProfile() {
                         />
                     </label>
                 </div>
-
+                
                 {/* Username & Bio */}
-                <div className="-mt-12 -ml-[10%]">
+                <div className="-mt-10 -ml-[1%]">
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-1">Username</label>
                         <input
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:border-main-red"
+                            className="bg-gray-700 border w-[500px] border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:border-main-red"
                         />
                     </div>
                     <div className="mb-4">
@@ -296,38 +297,41 @@ export default function EditProfile() {
                         <textarea
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
-                            className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:border-main-red w-64 h-24 resize-none"
+                            className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:border-main-red w-[500px] h-24 resize-none"
                         />
                     </div>
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-1">Games I Play</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {availableGames.map((game) => (
-                                <label
-                                    key={game.id}
-                                    className="flex items-center space-x-2 p-2 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedGames.includes(game.id)}
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setSelectedGames([...selectedGames, game.id]);
-                                            } else {
-                                                setSelectedGames(selectedGames.filter(id => id !== game.id));
-                                            }
-                                        }}
-                                        className="form-checkbox h-4 w-4 text-main-red"
-                                    />
-                                    <span>{game.name}</span>
-                                </label>
-                            ))}
+                        <div className="grid grid-cols-3 gap-2">
+                            {Array.isArray(availableGames) && availableGames.length > 0 ? (
+                                availableGames.map((game) => (
+                                    <label
+                                        key={game.id}
+                                        className="flex items-center space-x-2 p-2 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedGames.includes(game.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedGames([...selectedGames, game.id]);
+                                                } else {
+                                                    setSelectedGames(selectedGames.filter(id => id !== game.id));
+                                                }
+                                            }}
+                                            className="form-checkbox h-4 w-4 text-main-red"
+                                        />
+                                        <span>{game.name}</span>
+                                    </label>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 col-span-2">No games available</p>
+                            )}
                         </div>
                     </div>
                 </div>
-
                 {/* Buttons */}
-                <div className="ml-[45%] -mt-14 flex space-x-4">
+                <div className=" flex space-x-4 -ml-[12%] mt-5">
                     <button
                         type="submit"
                         className="px-6 py-2 bg-main-red hover:bg-red-700 rounded-md text-white"
@@ -342,6 +346,7 @@ export default function EditProfile() {
                         Cancel
                     </button>
                 </div>
+                
             </form>
         </div>
     );

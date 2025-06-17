@@ -13,48 +13,74 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\ImageService;
 
 class ForumController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $forums = Forum::all();
+        $perPage = $request->input('per_page', 12);
+        $forums = Forum::select([
+            'id',
+            'name',
+            'slug',
+            'description',
+            'image_url',
+            'member_count',
+            'post_count'
+        ])->orderBy('member_count', 'desc')
+        ->paginate($perPage);
         return response()->json([
             'status' => true,
-            'forums' => $forums
-        ]);
+            'forums' => $forums->items(),
+            'hasMore' => $forums->hasMorePages()
+        ])->header('Cache-Control', 'public, max-age=120'); // Cache for 2 minutes
     }
 
     public function getTopForums()
     {
-        $topForums = Forum::orderBy('member_count', 'desc')
-            ->take(4)
-            ->get();
+        $topForums = Forum::select([
+            'id',
+            'name',
+            'slug',
+            'description',
+            'image_url',
+            'member_count',
+            'post_count'
+        ])
+        ->orderBy('member_count', 'desc')
+        ->take(4)
+        ->get();
         
         return response()->json([
             'status' => true,
             'forums' => $topForums
-        ]);
+        ])->header('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:forums',
+            'slug' => 'required|string|max:255|unique:forums',
             'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $forum = new Forum();
         $forum->name = $request->name;
-        $forum->slug = Str::slug($request->name);
+        $forum->slug = $request->slug;
         $forum->description = $request->description;
         $forum->user_id = auth()->id();
 
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imagePath = $image->store('forum_images', 'public');
-            $forum->image_url = '/storage/' . $imagePath;
+            $forum->image = ImageService::compressAndStore(
+                $request->file('image'),
+                'forum_images',
+                80,  // quality
+                800, // max width for forum images
+                800  // max height for forum images
+            );
         }
 
         $forum->save();
@@ -68,25 +94,66 @@ class ForumController extends Controller
 
     public function show($slug)
     {
-        $forum = Forum::where('slug', $slug)
-            ->with(['posts' => function ($query) {
-                $query->with(['user', 'tags'])
-                    ->withCount(['comments', 'likedBy', 'dislikedBy'])
-                    ->orderBy('created_at', 'desc');
-            }])
-            ->withCount('members')
-            ->firstOrFail();
+        // Get forum with optimized query
+        $forum = Forum::select([
+            'id',
+            'name',
+            'slug',
+            'description',
+            'image_url',
+            'member_count',
+            'post_count',
+            'user_id'
+        ])
+        ->where('slug', $slug)
+        ->firstOrFail();
 
+        // Get posts with optimized query
+        $posts = Post::select([
+            'posts.id',
+            'posts.title',
+            'posts.content',
+            'posts.created_at',
+            'posts.forum_id',
+            'posts.user_id',
+            DB::raw('(SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 1) as likes'),
+            DB::raw('(SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 0) as dislikes'),
+            DB::raw('(SELECT COUNT(*) FROM comments WHERE post_id = posts.id) as comment_count')
+        ])
+        ->with([
+            'user:id,username,profile_picture',
+            'tags:id,tag'
+        ])
+        ->where('forum_id', $forum->id)
+        ->orderBy('created_at', 'desc')
+        ->paginate(10);
+
+        // Add is_member flag
         $user = Auth::user();
-        $isMember = $user ? $user->forumMemberships()->where('forums.id', $forum->id)->exists() : false;
-        
-        // Add is_member to the forum object
-        $forum->is_member = $isMember;
+        $forum->is_member = $user ? $user->forumMemberships()->where('forums.id', $forum->id)->exists() : false;
+
+        // Add vote status if user is authenticated
+        if ($user) {
+            $userId = $user->id;
+            $posts->getCollection()->transform(function ($post) use ($userId) {
+                $post->is_liked = DB::table('post_votes')
+                    ->where('post_id', $post->id)
+                    ->where('user_id', $userId)
+                    ->where('is_like', 1)
+                    ->exists();
+                $post->is_disliked = DB::table('post_votes')
+                    ->where('post_id', $post->id)
+                    ->where('user_id', $userId)
+                    ->where('is_like', 0)
+                    ->exists();
+                return $post;
+            });
+        }
 
         return response()->json([
             'forum' => $forum,
-            'posts' => $forum->posts
-        ]);
+            'posts' => $posts
+        ])->header('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
     }
 
     public function createPost(Request $request, $forumId)
@@ -526,5 +593,92 @@ class ForumController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $forum = Forum::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255|unique:forums,name,' . $id,
+            'slug' => 'required|string|max:255|unique:forums,slug,' . $id,
+            'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $forum->name = $request->name;
+        $forum->slug = $request->slug;
+        $forum->description = $request->description;
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            ImageService::deleteImage($forum->image);
+            
+            // Compress and store new image
+            $forum->image = ImageService::compressAndStore(
+                $request->file('image'),
+                'forum_images',
+                80,  // quality
+                800, // max width for forum images
+                800  // max height for forum images
+            );
+        }
+
+        $forum->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Forum updated successfully',
+            'forum' => $forum
+        ]);
+    }
+
+    public function getPopularPosts(Request $request)
+    {
+        $perPage = $request->input('per_page', 6);
+        $page = $request->input('page', 1);
+
+        // Optimize query by selecting only needed fields and eager loading relationships
+        $posts = Post::select([
+            'posts.id',
+            'posts.title',
+            'posts.content',
+            'posts.created_at',
+            'posts.forum_id',
+            'posts.user_id',
+            DB::raw('(SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 1) as likes'),
+            DB::raw('(SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 0) as dislikes'),
+            DB::raw('(SELECT COUNT(*) FROM comments WHERE post_id = posts.id) as comment_count')
+        ])
+        ->with([
+            'forum:id,name,slug',
+            'user:id,username,profile_picture',
+            'tags:id,tag'
+        ])
+        ->orderByRaw('(SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 1) - (SELECT COUNT(*) FROM post_votes WHERE post_id = posts.id AND is_like = 0) DESC')
+        ->paginate($perPage, ['*'], 'page', $page);
+
+        // Add is_liked and is_disliked flags if user is authenticated
+        if (auth()->check()) {
+            $userId = auth()->id();
+            $posts->getCollection()->transform(function ($post) use ($userId) {
+                $post->is_liked = DB::table('post_votes')
+                    ->where('post_id', $post->id)
+                    ->where('user_id', $userId)
+                    ->where('is_like', 1)
+                    ->exists();
+                $post->is_disliked = DB::table('post_votes')
+                    ->where('post_id', $post->id)
+                    ->where('user_id', $userId)
+                    ->where('is_like', 0)
+                    ->exists();
+                return $post;
+            });
+        }
+
+        return response()->json([
+            'posts' => $posts->items(),
+            'hasMore' => $posts->hasMorePages()
+        ])->header('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
     }
 } 

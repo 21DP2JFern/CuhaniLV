@@ -35,10 +35,13 @@ export default function Home() {
 
     try {
       const response = await login({ email, password });
-      console.log('Login successful:', response);
-      console.log('Attempting to redirect to /home');
-      router.push('/home');
-      console.log('router.push called.');
+      
+      if (response.status === true && response.token) {
+        console.log('Login successful:', response);
+        router.push('/home');
+      } else {
+        setError('Login failed. Please check your credentials and try again.');
+      }
     } catch (error: any) {
       console.error('Login failed:', error);
       setError(error.message || 'Login failed. Please check your credentials and try again.');
